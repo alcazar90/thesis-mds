@@ -218,7 +218,13 @@ demoostrar?
 \begin{equation}\label{eqn:reinforce-gradient-reward-to-go}
     \nabla_{\theta}\mathbb{E}_{p_{\theta}(\tau)}[R(\tau)] = \mathbb{E}_{p_{\theta}(\tau)}\bigg[\bigg(\sum_{t=0}^{T-1} \nabla_{\theta}\log \pi_{\theta} (a_t~|~s_t)\bigg) \bigg(\sum_{t'=t}^{T-1}R(s_{t}, a_{t}, s_{t+1})\bigg)\bigg] 
 \end{equation}
-Notice that 
+Notice that the sum of the reward index is $t$ dependent. For action $t$ we 
+will weight on rewards from $t$ to $T-1$, for action $t+1$ we will weight on
+rewards from $t+1$ to $T-1$, and so on. There is no effect of previous rewards
+on the weight of the current action, only the consequence of the current action
+on the future rewards. This is the causality we want to impose in the gradient
+estimator.
+
 Lets come back to the \textit{baseline}, we want to use a baseline function
 based on the current $s_{t}$, because it is reduce the variance of our gradient
 estimate without unbiased the estimator, i.e. at no cost.
