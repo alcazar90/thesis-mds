@@ -1,6 +1,13 @@
 \chapter{Reinforcement Learning}
 
-Reinforcement learning (RL) is all about the interaction between agent and environment. The learning comes in the form of trial-and-error, in which the agent observe the state of the environment, takes actions according to that observations, influencing new possible states configurations, and perceive rewards given its previous decision. Everything is commanded toward achieve a goal such as escaping from a maze, \href{https://arxiv.org/abs/1312.5602}{win some Atari Game} \citep{mnih2013playing}, or \href{https://deepmind.google/technologies/alphago/}{defeating the world champion of Go} \citep{silver2016mastering}. The reward is how we encoded our progression to the goal.
+Reinforcement learning (RL) is all about the interaction between an agent and the environment. The learning comes in the form of trial-and-error, in which the agent observe the state of the environment, takes actions according to that observations, influencing new possible states configurations, and perceive rewards given its previous decision. \\
+Everything is commanded toward achieve a goal such as escaping from a maze, \href{https://arxiv.org/abs/1312.5602}{win some Atari Game} \citep{mnih2013playing}, or \href{https://deepmind.google/technologies/alphago/}{defeating the world champion of Go} \citep{silver2016mastering}. How does
+the agent knows if the goals is achieving? Given a reward signal, the
+agent can act in the environment to maximize the cumulative reward, and
+by this means guides their actions to achieve its goal.
+
+%The reward is how we encoded our progression to the goal. Therefore, the reinforcement learning is a framework to learn to act, 
+
 
 \section{The Framework for Learning to Act}
 
@@ -13,6 +20,11 @@ Reinforcement learning (RL) is all about the interaction between agent and envir
   \end{figure}
 
 Introducir toda la notación...
+
+%The main difference between supervised learning and reinforcement learning
+%is that we don't have an explicit feedback of each action in form a 
+
+The main difference between Supervised Learning and Reinforcement Learning is that we don't have a direct feedback of each action through a label. Even in the case that we have a label for an action, we're just not simply interested in the evaluation of individual actions, instead we are interested in the overall trajectory performance, and intertwined of states $s_t$ and actions $a_t$. So, how can we obtained feedback for backpropagated it through agent's parameters to provide corrections about its actions?
 
 Si el agente tiene acceso o no al modelo del ambiente: model-free RL y model-based RL. Disponer de un model del mundo permite al agente planificar. 
 En cambio, model-free RL son mas fáciles de implementar, pero están
@@ -35,7 +47,7 @@ The policy is a distributions over actions spawned conditional the states.
 
 \subsection{Learning the Policy}
 
-The main difference between Supervised Learning and Reinforcement Learning is that we don't have a direct feedback of each action through a label. Even in the case that we have a label for an action, we're just not simply interested in the evaluation of individual actions, instead we are interested in the overall trajectory performance, and intertwined of states $s_t$ and actions $a_t$. So, how can we obtained feedback for backpropagated it through agent's parameters to provide corrections about its actions?
+%The main difference between Supervised Learning and Reinforcement Learning is that we don't have a direct feedback of each action through a label. Even in the case that we have a label for an action, we're just not simply interested in the evaluation of individual actions, instead we are interested in the overall trajectory performance, and intertwined of states $s_t$ and actions $a_t$. So, how can we obtained feedback for backpropagated it through agent's parameters to provide corrections about its actions?
 
 The starting point is thinking in trajectories as a unit of learning, instead of individual observations (i.e. actions). What is the dynamic that instance/spawn a trajectory? Given a policy $\pi_{\theta}$, represented as a function with parameter $\theta$, we can deployed the agent into their environment at an initial state $s_0$ and look up--just in inference mode or \textit{evaluation phase}-how does promote actions $a_t$ given the current state $s_t$, repeatedly, until we have an episode $t=T$. In which we can know if the goal was accomplished or not, i.e. we won the ATARI pong game? or does the drone achieve stability in the flight, given the initial settings? or \textit{my samples from the diffusion model are enough aesthetic as I want?} The reward we will provide signal to us about if we met the ultimate goal, and we can just think of the signal as a "proxy of a label", but for the overall trajectory. That it is the job of the \textbf{return function} (check terminology), collapse the rewards obtained during trajectory into a single scalar that provides a measure of assessment whether the agent achieve their goal or not. Therefore, we end up with a "proxy label" for our unit learning that is the trajectory. The remaining job is to establish the feedback mechanism to the \textit{learning phase}.
 

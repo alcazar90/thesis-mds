@@ -1,37 +1,43 @@
 \chapter{Extending Reinforcement Learning in Diffusion Models}
 
-The code repository \href{https://github.com/alcazar90/ddpo-celebahq}{https://github.com/alcazar90/ddpo-celebahq}.
+Code: \href{https://github.com/alcazar90/ddpo-celebahq}{https://github.com/alcazar90/ddpo-celebahq}
 
 \section{Introduction}
 
 \textbf{TODO:} Introducir los modelos de difusión y luego la intersección de
 estos con reinforcement learning. \\
 
-Reinforcement learning has shown the capacity to orchestrate or align highly complex generative models, which often proves intractable using supervised learning matching distribution objective. Constructing agents based on generative models can be seen as an user-model interface, an intriguing line of exploration from the perspective of human-computer interaction (HCI). While reinforcement learning is not a cheap or intuitive approach, it offers flexibility and simplicity by optimizing a reward. Regarding the cost of sampling, highly capable generative models such as LLMs and diffusion models have fostered research efforts to reduce inference times for sample generation (inference as a first citizen). These advances make it more appealing to construct agents atop these models. \\
+Reinforcemenet learning has shown the capacity to orchestrate or align highly complex generative models, which often proves impossible using a supervised learning objective such as matching distribution. Constructing agents based on generative models can be seen as a user-model interface endeavor, an intriguing line of exploration from the perspective of human-computer interaction (HCI). While reinforcement learning is not a cheap or intuitive approach, it offers flexibility and simplicity by optimizing a reward. Regarding the cost of sampling, highly capable generative models such as LLMs and diffusion models have fostered research efforts to reduce inference times for sample generation (inference as a first citizen). These advances make it more appealing to construct agents atop these models. \\
 
 In this work, we propose several extensions to the formulation of the diffusion process as a sequential decision-making process, specifically regarding how to exploit the information from the intermediate state rewards rather than only using the final trajectory outcome. Based on the \textit{insights} of the reward signal behavior in sample generation, we propose methods based on the challenge classifier guidance techniques from the diffusion model literature. Moreover, we explore the use of baseline functions, a technique known to reduce the variance of the gradient estimator when using Monte Carlo estimation \cite{mohamed2020monte}, without introducing bias into the estimator. We compare the implementation of these extensions to the DDPO algorithm \cite{black2023training} on which our formulation is based, on the same \textit{downstream tasks} used in this work, such as JPEG compressibility, JPEG incompressibility, and aesthetic quality as proposed in \cite{black2023training}. \\
 
 Our contributions extend the existing framework of the diffusion process by exploiting the informative intermediate state rewards rather than solely relying on the final trajectory outcome. We analyze the reward signal dynamics throughout the denoising process using a collection of sample trajectories from the \textit{google/ddpm-celebahq-256} model. Additionally, we propose extended reward functions that incorporate further information beyond the final sample, alongside the introduction of baseline functions during RL training. We compare the implementation of these extensions with the DDPO algorithm, highlighting the advantages of our framework in downstream tasks such as JPEG compressibility, JPEG incompressibility, and aesthetic quality assessment.
 
+% Visual comparison between pretrained and ckpts fintuned with DDPO
+\begin{figure}[ht]
+  \centering
+  \includegraphics[scale=0.72]{img/results/visual-comparison-results-200dpi.png}
+  \vspace{-4pt}  % reduce space between caption and figure
+    \captionsetup{width=\textwidth} % set the width of the caption
+    \caption{\textbf{DDPO samples vs pretrained samples.} Qualitative depiction of the effects of RL finetuning on different reward functions. Additional
+    samples in the Appendix~\ref{appendix:additional-samples}.}
+    \label{fig:visual-comparison-ddpo}
+\end{figure}
+
 \section{Related Work}
 
-\textbf{TODO:} Esta sección tiene que ser escrita muy en modo paper Neurips
-para reciclar lo máximo posible. Explicar el trabajo de Black y otros. \\
+\textbf{Diffusion Models.} Muy breve y referenciar capítulo de background.\\
+
+\textbf{Reinforcement Learning.} Muy breve y referenciar capítulo de background.\\
+
+\textbf{Reinforcement Learning from Human Feedback (RLHF).} Recently the attention to use human feedback in reinforcement learning has increased \cite{kaufmann2023survey}. The core idea is to capture the human feedback into a reward model that can be used to train the policy that dictates the agent's behaviour. The benefits it's to allow different types of feedback, such as binary, continuous, or even more complex signals that can be used to train in a supervised learning fashion. Then, instead of design the reward function---or use feature engineering---we can gives the agent access to the reward model to obtain the neccessary information to label trajectories and optimize its behaviour to learn the task. \\
+
+%In this manner, we can align the agent behaviour to the human preferences in scenarios which we actually don't know how to provide the reward. The work of \cite{ouyang2022training} is a recent example in provide...\\
 
 
-Introducir qué es Reinforcement Learning with Human Feedback. Vincular con el paper de Ouyang en modelos de lenguaje: Training language models to follow instructions with human feedback. Ver tambien el substack de Nathan Lambert (https://www.interconnects.ai/p/specifying-objectives-in-rlhf). 
-
-Papers relevantes para establecer relación entre modelos de difusión y RL.
-
-\begin{itemize}
-    \item Training Diffusion Models with Reinforcement Learning (Black 2023)
-    \item Aligning Text-to-Image Models using Human Feedback (Lee 2023). Interesting discussion about how to train the reward function, this work provides pseudo-code with the steps used for training. However, the apporach purposed in this work is off-line and doesn't generate samples to update the model using a policy optimization algorithm like DDPO.
-    \item Trust Region Policy Optimization \& Proximal Policy Optimization Algorithms (Schulman 2015 and 2017). The former work extend a theoretical lower bound that works for policy update, original present for the case of mixture policies (something between $\pi_{old}$ and $\pi`$), and now adapted to stochastic policies. They introduce a distance measure between policies: total variation divergence. 
-\end{itemize}
+\textbf{Reinforcement learning \& Diffusion models.} Citar trabajos de Schulman \citep{schulman2015trust} y \citep{schulman2017proximal}. The former work extend a theoretical lower bound that works for policy update, original present for the case of mixture policies (something between $\pi_{old}$ and $\pi`$), and now adapted to stochastic policies. They introduce a distance measure between policies: total variation divergence. In the following section, we will detailed more the policy optimization approach for finetuned diffusiono models with RL.\\
 
 \section{Background: Diffusion Model as Sequential Decision-making Process}
-
-Several works postulate probabilistic models as MDPs...
 
 % Diffusion Model as MDP
 \begin{figure}[ht]
@@ -39,42 +45,43 @@ Several works postulate probabilistic models as MDPs...
   \includegraphics[scale=0.85]{img/results/diffusion-model-MDP.png}
   \vspace{-4pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Diffusion model as a sequential decision-making process.} The policy
-  $\pi_{\theta}:=p_{\theta}(\mathrm{x}_{t-1} | \mathrm{x}_{t})$ start taking denoising decisions from pure noise until the final sample $\mathrm{x}_0$, through the entire backward process $\tau=\mathrm{x}_{T:0}$. \textbf{TODO:} mejorar este caption...}
+    \caption{\textbf{Diffusion model as a sequential decision-making process.} The policy $\pi_{\theta}:=p_{\theta}(\mathrm{x}_{t-1} | \mathrm{x}_{t})$  takes denoising decisions from pure noise to the final sample $\mathrm{x}_0$ through the entire backward process $\tau=\mathrm{x}_{T:0}$.}
   \label{fig:diffusion-model-mdp}
 \end{figure}
 
 % agregar función de reward...
-We consider the denoising diffusion policy optimization (DDPO) 
-\cite{black2023training} formulation as starting point. The initial state
-$\mathrm{s}_{0}$ is sampling from an isotropic Gaussian distribution
- $\rho_{0}\sim\mathcal{N}(0, I)$, corresponding to the noise
- $\mathrm{x}_{T}$ at the beginning of the diffusion backward process (Figure~\ref{fig:diffusion-model-mdp}), when the
-sampling process start. The denoising neural network $p_{\theta}$ using to
-estimate $\mathrm{x}_{t-1}$ at each timestep $t$ directly, or indirectly by
-estimate the noise $\hat{\epsilon}_{t}$, is treat as the policy
-$\pi_{\theta}(a_{t}, s_{t})$, in which the agent via its denoising action moves 
-from a noisy step to a less noisy one, i.e. $a_t: x_{t} \rightarrow x_{t-1}$.
+We consider the denoising diffusion policy optimization (DDPO) formulation \citep{black2023training} as a starting point. The initial state of the Markov decision process,
+$\mathrm{s}_{0}$, is sampling from an isotropic
+Gaussian distribution 
+$\rho_{0}\sim\mathcal{N}(0, I)$, corresponding to the
+noise $\mathrm{x}_{T}$ at the beginning of the
+diffusion backward process as shown in Figure~\ref{fig:diffusion-model-mdp}, where the sample
+generation starts. 
+Then, a \textit{denoising} neural network $p_{\theta}$
+is used to directly estimate $\mathrm{x}_{t-1}$ at
+timestep $t$ (or indirectly by
+estimating the noise $\hat{\epsilon}_{t}$) and is
+treated as a policy $\pi_{\theta}(a_{t}, s_{t})$. The policy describes how an agent---via its denoising actions $a_{t}$---moves from a noisy
+step to a less noisy one (i.e. 
+$a_t: \mathrm{x}_{t} \rightarrow \mathrm{x}_{t-1}$) until arrives to a terminal state $s_T$, where the sample $\mathrm{x}_{0}$ is generated. \\
 
-In this framework, we can optimize the diffusion model parameters 
-$\theta$ directly via policy gradient estimation to maximize any arbitrary
-scalar-reward signal over the sample $\mathrm{x}_{0}$ producing by the diffusion
-process, using the following objective:
+In this framework, we can optimize the diffusion
+model parameters $\theta$ directly via policy
+gradient estimation to maximize any arbitrary
+scalar-reward signal over the sample $\mathrm{x}_{0}$.
+In other words, the agent learns how to denoise trajectories to maximize the expected reward using the following objective:
 \begin{equation}\label{difusion-rl-objective-1}
   \mathcal{J}_{\text{DDRL}}(\theta)
   = \mathbb{E}_{\mathrm{c}\sim p(\mathrm{c}),  \mathrm{x}_{0}\sim p_{\theta}(\mathrm{x}_{0}|\mathrm{c})}[ r(\mathrm{x}_{0}, \mathrm{c})]
 \end{equation}
-An important point of this formulation is that the reward $R(s_{t}, a_{t})$
-only provide information from the final sample $\mathrm{x}_{0}$, giving zero
-reward to every non-terminal state, or $\mathrm{x}_{t}$ where $t\neq0$ as it is
-depicted in Figure~\ref{fig:diffusion-model-mdp}.
-
-Given the objective of this agent, the DDPO works presents two objective 
-variations, the traditional REINFORCE objective \cite{williams1992simple} called $\text{DDPO}_{\text{SF}}$, where SF stand by score function method to estimate gradients from samples using Monte Carlo \cite{mohamed2020monte}, and $\text{DDPO}_{\text{IS}}$ that used importance sampling to optimize a surrogate objective \cite{schulman2015trust} \cite{schulman2017proximal}.
+A relevant aspect of this formulation is that the reward $R(s_{t}, a_{t})$
+only provides information about the final sample $\mathrm{x}_{0}$, giving zero
+reward to each non-terminal state, or $\mathrm{x}_{t}$ where $t\neq0$ as it is
+depicted in Figure~\ref{fig:diffusion-model-mdp}. Additionally, DDPO-based methods propose two ways to compute the gradients: i) via a score function method, also known as REINFORCE, and ii) using importance sampling to optimize a surrogate objective (\citet{schulman2015trust, schulman2017proximal}). This second approach, denoted $\text{DDPO}_{\text{IS}}$ in eq.~\eqref{eqn:ddpo-is-objective}, is used as benchmark in our paper to compare the proposed method.\footnote{When we refer to DDPO from here on without specifying, it is DDPO with importance sampling.} 
 % agregar objetivo DDPO_{SF}
-\begin{equation}\label{eqn:ddpo-sf-objective}
-  (\text{DDPO}_{\text{SF}})~~ \nabla_{\theta}\mathcal{J} = \mathbb{E}_{\mathrm{x}_{T:0}\sim p_{\theta}} \bigg[\sum_{t=0}^{T}\nabla_{\theta}\log p_{\theta}(\mathrm{x_{t-1}|\mathrm{x}_t}) r(\mathrm{x}_{0})\bigg]
-\end{equation}
+%\begin{equation}\label{eqn:ddpo-sf-objective}
+%  (\text{DDPO}_{\text{SF}})~~ \nabla_{\theta}\mathcal{J} = \mathbb{E}_{\mathrm{x}_{T:0}\sim p_{\theta}} \bigg[\sum_{t=0}^{T}\nabla_{\theta}\log p_{\theta}(\mathrm{x_{t-1}|\mathrm{x}_t}) r(\mathrm{x}_{0})\bigg]
+%\end{equation}
 % agregar objetivo DDPO_{IS}
 \begin{equation}\label{eqn:ddpo-is-objective}
   (\text{DDPO}_{\text{IS}})~~ \nabla_{\theta}\mathcal{J} = \mathbb{E}_{\mathrm{x}_{T:0}\sim p_{\theta_{\text{old}}}} \bigg[\sum_{t=0}^{T}\frac{p_{\theta}(\mathrm{x}_{t-1}|\mathrm{x}_{t})}{p_{\theta_{\text{old}}}(\mathrm{x}_{t-1}|\mathrm{x}_{t})}\nabla_{\theta}\log p_{\theta}(\mathrm{x_{t-1}|\mathrm{x}_t}) r(\mathrm{x}_{0})\bigg]
@@ -199,25 +206,29 @@ XYZ
 \section{Experiments}
 
 En primer lugar queremos reproducir la implementación propuesta en \textit{Training Diffusion Models with Reinforcement Learning} \cite{black2023training} en un \textit{setting} más simplificado para facilitar
-la experimentación, pero que aún capture la complejidad de los text-to-image models para experimentar con \textit{reward functions}. Utilizaremos como
-modelo preentrenado \texttt{google/ddpm-celebahq-256} descrito
-en \cite{ho2020denoising}, el cual es un modelo no condicionado que
-genera imágenes de dimensiones 256x256 de rostros humanos en RGB. Este modelo es previo a los modelos latentes de difusión, por lo que el proceso de \textit{denoising} ocurre en el espacio de los pixeles.
+la experimentación, pero que aún capture la complejidad de los text-to-image models para experimentar con \textit{reward functions}. Utilizaremos como \textit{baseline} las capacidades generativas del modelo preentrenado \texttt{google/ddpm-celebahq-256} descrito en \cite{ho2020denoising}. Este es un modelo no condicionado que genera imágenes RGB de 256x256 con rostros de personas. Es un modelo previo a los modelos latentes de difusión, por lo que el proceso de \textit{denoising} ocurre en el espacio de los pixeles. \\
 
 
-\subsection{LAION Aesthetic Score}
 
- XYZ
 
- \subsection{JPEG Compressibility \& Incompressibility}
+
+In our experiments, we employed three downstream tasks as outlined in \citet{black2023training}: compressibility, incompressibility, and aesthetic quality. The first two tasks are defined by the size of images after applying a JPEG compression algorithm, serving as the reward function. For aesthetic quality, we utilized the LAION aesthetic model \citep{laionaesthetic}, a multilayer perceptron that assigns a scalar value from 1 to 10 to indicate the aesthetic quality of an image. \\
+
+
+These tasks effectively demonstrate the flexibility of using RL to learn new downstream objectives. Supervised learning finetuning often struggles to encode tasks like compressibility and incompressibility into a loss function, whereas RL can optimize these tasks directly through a reward function. Additionally, the LAION aesthetic model, trained on human preferences, exemplifies how human feedback can be incorporated to align sample generation with desired outcomes. This is a key advantage of using RL with generative models \citep{ouyang2022training}. \\
+
 
  Using as a reward the size of the image after JPEG compression, we can 
  define two tasks: compressibility and incompressibility. For compressibility,
  we want to maximize the negative size of the image after compression. This
 is equivalent to minimizing the size of the image after compression. 
-The other side of the coin is to maximize the size of the image after compression, aka incompressibility.
+The other side of the coin is to maximize the size of the image after compression, aka incompressibility. \\
   
  \subsection{Over 50 years old}
+
+ XYZ
+
+ \subsection{Experiment results}
 
  XYZ
 
@@ -225,7 +236,7 @@ The other side of the coin is to maximize the size of the image after compressio
 \centering
 \begin{tabular}{lccc}
 \toprule
-\textbf{Downstream Task} & \textbf{DDPM} & \textbf{DDPO} & \textbf{DDPOI}\\
+\textbf{Downstream Task} & \textbf{Baseline} & \textbf{DDPO} & \textbf{I-DDPO}\\
 \midrule
 LAION Aesthetic Score ($[1,10]$) & 5.11 $~\pm$ 0.02 & \textbf{5.58} $~\pm$ 0.03 & - \\
 JPEG compressibility (kb) & 17.26 $~\pm$  0.29 & \textbf{6.01} $~\pm$ 0.25  & -\\
@@ -234,7 +245,8 @@ Over 50 years old $P(x>\text{50})$ & 0.12 & - & - \\
 \bottomrule
 \end{tabular}
 \captionsetup{width=\textwidth} % set the width of the caption
-\caption{Mean and standard error of the mean (SEM) for rewards associated with each downstream task (rows) and each checkpoint trained based on the methods studied (columns). To ensure a fair comparison, all checkpoints were generated samples using the same initial noise. The \textbf{DDPM} column provides estimates of the initial capacities of the google/ddpm-celebahq-256 model, derived from the images in the dataset $\mathcal{D}_{o}$. The \textbf{DDPO} column corresponds to the checkpoint trained using DDPO with importance sampling, as referenced in \cite{black2023training}. The \textbf{DDPOI} column represents our proposed method. \textbf{TODO:} simplificar este caption mega verboso.}
+%\caption{Mean and standard error of the mean (SEM) for rewards associated with each downstream task (rows) and each checkpoint trained based on the methods studied (columns). To ensure a fair comparison, all checkpoints were generated samples using the same initial noise. The \textbf{DDPM} column provides estimates of the initial capacities of the google/ddpm-celebahq-256 model, derived from the images in the dataset $\mathcal{D}_{o}$. The \textbf{DDPO} column corresponds to the checkpoint trained using DDPO with importance sampling, as referenced in \cite{black2023training}. The \textbf{I-DDPO} column represents our proposed method. \textbf{TODO:} simplificar este caption mega verboso.}
+\caption{\textbf{Mean and standard error of the mean for rewards associated with each downstream task.} For fairness, all checkpoints used the same initial noise for sample generation. The \textbf{Baseline} refers to the generative capabilities of the pretrained model. \textbf{DDPO} shows results from a finetuned model using DDPO with importance sampling, as referenced in \cite{black2023training}. The \textbf{I-DDPO} column represents our proposed method.}
 \end{table}
 
 
@@ -280,20 +292,18 @@ compresión. Sin embargo, reducir el tamaño del archivo siempre se puede
 alcanzar destruyendo la capacidad de generación del modelo, i.e. quitar
 información es más fácil que agregar/crear información.
 
-% Visual comparison between pretrained and ckpts fintuned with DDPO
-\begin{figure}[ht]
-  \centering
-  \includegraphics[scale=0.72]{img/results/visual-comparison-results-200dpi.png}
-  \vspace{-4pt}  % reduce space between caption and figure
-    \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{DDPO samples vs pretrained samples.} Qualitative depiction of the effects of RL finetuning on different reward functions.}
-    \label{fig:visual-comparison-ddpo}
-\end{figure}
-
 
 \section{Discussion \& Limitations}
 
-\lipsum[1]
+\noindent\textbf{Overoptimization and diversity samples.} Despite the benefits 
+to optimize the model using RL, we can fall into the trap of overoptimization.
+This is a common issue in RL, where the model learns to exploit the reward
+and we can see a lack of diversity in the samples, as shown in Figure~\ref{fig:ddpo-aesthetic-samples}. The agent clearly learn how to exploit the reward
+function, and collapse into a single mode (i.e. women, blond hair, white) to
+achieve the goal of sampling images with higher \textit{``aesthetic quality''}.
 
-\lipsum[4]
+Acá será ideal una imagen con la idea de reducción de dimensionalidad sobre los CLIP embeddings del mismo batch generado por el modelo preentrenado y DDPO.  In Figure~\ref{fig:ddpo-aesthetic-samples}.
+
+\noindent\textbf{Broader impact.} \ca{Mencionar algo sobre reproducción y exacerbación de sesgos dentro del dataset. Además del mal uso que se le pueda dar a los modelos generativos, especificamente a los de imágenes como deepfake y otros usos maliciosos. Apoyarse con citas en este trabajo..., sin embargo, mencionar también que el uso de RLHF sobre modelos generativos es una vía para el problema de alignment y ver como alinear los objetivos del modelo a valores (idealmente deseables) del operador...}
+
 
