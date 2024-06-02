@@ -32,7 +32,7 @@ Tesis para optar al grado de magíster en ciencia de datos
 \def\universitylocation {Santiago de Chile}
 
 % INTEGRANTES, PROFESORES Y FECHAS
-\def\documentauthor {Cristóbal Alcázar}
+\def\documentauthor {Cristóbal Patricio Alcázar Carrasco}
 \def\documentdate {\the\year}
 
 \def\portrait {
@@ -60,15 +60,33 @@ Tesis para optar al grado de magíster en ciencia de datos
 	\end{tabular}
 	\end{center}
 }
+
+% abstract en ingles y español
 \def\abstracttable {
+	\begin{tabular}{l}
+		THESIS SUMMARY TO QUALIFY FOR \\
+		THE DEGREE OF MASTER OF SCIENCE \\
+		IN DATA SCIENCE \\
+		BY: \MakeUppercase{\documentauthor} \\
+		DATE: \MakeUppercase{\documentdate} \\
+		ADVISOR: FELIPE TOBAR
+		%PROF. GUÍA: Felipe Tobar
+	\end{tabular}
+}
+
+\def\abstracttableesp {
 	\begin{tabular}{l}
 		RESUMEN DE LA TESIS PARA OPTAR \\
 		AL TÍTULO DE MAGÍSTER EN CIENCIAS \\
 		DE DATOS \\
 		POR: \MakeUppercase{\documentauthor} \\
 		FECHA: \MakeUppercase{\documentdate} \\
-		PROF. GUÍA: Felipe Tobar
+		PROF. GUÍA: FELIPE TOBAR
 	\end{tabular}
+}
+
+\def\documenttitleesp {
+	EXTENSIÓN DE APRENDIZAJE POR REFUERZO EN MODELOS DE DIFUSIÓN
 }
 
 % IMPORTACIÓN DEL TEMPLATE
@@ -87,6 +105,10 @@ Tesis para optar al grado de magíster en ciencia de datos
 \begin{abstractd}
 	\lipsum[1]
 \end{abstractd}
+
+\begin{abstractdesp}
+	\lipsum[1]
+\end{abstractdesp}
 
 % DEDICATORIA
 \begin{dedicatory}
@@ -108,7 +130,6 @@ Tesis para optar al grado de magíster en ciencia de datos
 \templateFinalcfg
 
 % ======================= INICIO DEL DOCUMENTO =======================
-
 \input{ch1-intro}
 
 \input{ch2-diffusion-models}

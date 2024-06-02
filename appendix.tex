@@ -65,7 +65,7 @@
 	\begin{table}[H]
 		\begin{threeparttable}
 		\centering
-		\caption{Tabla de cálculo.}
+		\caption{Hyperparameters used in the experiments.}
 		\begin{tabular}{cccC{4cm}}
 			\hline
 			\textbf{Elemento} & $\epsilon_i$ & \textbf{Valor} & \textbf{Descripción} \bigstrut \\
@@ -85,6 +85,10 @@
 		\label{tab:anexo-1}
 	\end{table}
 	\disabletablerowcolor % Desactiva el color de celda
+
+    \subsection{Linear Warmup \& Half-Cosine Decay}
+
+    From the downstream task aesthetic quality the training dynamics present difficult to optimize the reward using a fixed learning rate. Improvement start to appears using...%The learning rate schedule is a linear warmup for the first 10\% of the training steps, followed by a half-cosine decay for the remaining 90\% of the training steps. The learning rate is multiplied by a factor of 0.1 at the end of the linear warmup and then decayed using a half-cosine decay schedule. The learning rate is initialized at $10^{-4}$ and the optimizer is Adam with $\beta_1 = 0.9$, $\beta_2 = 0.999$, and $\epsilon = 10^{-8}$.
 
 
 

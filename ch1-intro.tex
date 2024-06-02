@@ -14,14 +14,14 @@ The \textbf{good}: Formular la cadena de difusión como un \textit{Markov Decisi
 
 The \textbf{bad}: La Figura~\ref{fig:anatomy-rl-algo} ilustra la anatomía de cualquier algoritmo de reinforcement learning (e.g. REINFORCE, DQN) para aprender un \textit{policy} a traves de interactuar con su ambiente (real o simulado). \\
 
-The \textbf{thesis:} ¿Qué tecnicas se pueden utilizar para disminuir el costo de simular la interacción? ¿Es posible utilizar alguna técnica de neural compression (e.g. AE, VAE, VQ-VAE/VQ-GAN) como se usa en LDM \cite{rombach2022highresolution} o \cite{pernias2023wuerstchen} para entrenar el modelo, pero a nivel de fine-tuning. Un reward asigna un score a cada trayectoria (simulación), es consumidor de trayectorias, se puede utiliar un meta reward para ir destilando trayectorias más cortas a medida que el algoritmo aumenta? \\
+%The \textbf{thesis:} ¿Qué tecnicas se pueden utilizar para disminuir el costo de simular la interacción? ¿Es posible utilizar alguna técnica de neural compression (e.g. AE, VAE, VQ-VAE/VQ-GAN) como se usa en LDM \cite{rombach2022highresolution} o \cite{pernias2023wuerstchen} para entrenar el modelo, pero a nivel de fine-tuning. Un reward asigna un score a cada trayectoria (simulación), es consumidor de trayectorias, se puede utiliar un meta reward para ir destilando trayectorias más cortas a medida que el algoritmo aumenta? \\
 
 \ca{Probablemente acá sera interesante poner ese diagrama de Venn con la interessción de modelos de difusión y RL...(?)}
 
 \section{Related Work}
 
 \ca{En esta sección incorporar el related work de reinforcement learning, reinforcement learning from human feedback, esta se puede completar antes 
-que la sección de arriba.}
+que la sección de arriba. \textbf{TODO:} basarse en exposición y blogpost de \href{https://yang-song.net/blog/2021/score/}{Generative Modeling by Estimating Gradients of the Data Distribution} (Yang Song).}
 
 Diffusion \citep{sohldickstein2015deep} \citep{ho2020denoising} and score-based models \citep{song2020generative} are a kind of generative models, in which they learn from the dataset $\mathcal{D}$ a distribution $p(\mathbf{x})$ and achieve the two basic primitive operations expected for this type of models, evaluation and sampling, with the importance that scale well and handle highly complex data such as images or audio. To accomplish this task, diffusion models start with a simple prior distribution (e.g. isotropic-gaussian) and, iteratively, through a denoising process, it mutates into the target distribution. Recent years have shown an essential advance in extending and adapting the work on diffusion models, likewise making the sampling process faster in the work of \cite{song2020denoising}, \cite{nichol2021improved}, and \cite{Salimans2022ProgressiveDF}. Incorporate additional information $\mathbf{y}$ (e.g. text prompt, an image seed) to learn a conditional model $p(\mathbf{x} | \mathbf{y})$; this endeavour will be explored indirectly by guiding the sampling with an external classifier in \cite{Dhariwal2021DiffusionMB}, or achieving the same but directly in the model training phase using classifier-free guidance purpose in \cite{Ho2022ClassifierFreeDG} and effectively implemented in work \cite{nichol2022glide}. These techniques had many connections with the concept of temperature commonly used in Large Language Models (LLM) and proved helpful to guide the sampling in the gradient direction toward the space between $\mathbf{x}$ and $\mathbf{y}$ signals. Moreover, progress toward improving the likelihood estimation and exhibited impressive results on tasks such as text conditional image generation with visual language models \cite{ramesh2022hierarchical} and \cite{saharia2022photorealistic}, super-resolution \cite{ho2021cascaded}, in-painting, style transfer, and combining different data modalities. \\
 
@@ -29,15 +29,17 @@ A vital research line is to use pre-trained diffusion models and adapt to novel 
 
 \section{Contributions and Outline}
 
-\ca{El outline y contribuciones de la tesis ya estan claras. La estructura de la tesis no va a cambiar, y si bien la extensión del framework DDPO no se encuentra lista, esta claro lo qué se va a hacer: agregar baseline e incorporar retorno de los steps intermedios a la universal guidance.}
+\ca{Volver a revisar cuando termine el último capítulo y ver si se acomodan
+las contribucionoes a todo lo que finalmente se hizo...}
 
-In this thesis we will explore the use of Reinforcement Learning techniques to adapt pre-trained diffusion models to new tasks. Specifically, we develop... The main contributions of this work are:
+In this thesis we will explore the use of Reinforcement Learning techniques to adapt pre-trained diffusion models to new tasks. Specifically, the use of policy optimization over agents built-on-top of the denoising network---within
+the diffusion model framework---and guide the sampling process to maximize a reward signal. The main contributions of this work are:
 
 \begin{enumerate}
     \item The neccessary background to understand the intersection between diffusion models and reinforcement learning that is an essential guide to contribute to the field.
-    \item A reproduction of the work in \cite{black2023training} that introduces policy optimization algorithms to adapt pre-trained diffusion models to new tasks.
-    \item An empirical analysis of the reward during the sample trajectories and not only consider the reward in the final sample or step of the diffusion process.
-    \item Extending the work in \cite{black2023training} by incorporating a baseline to the policy optimization algorithm.
+    \item A reproduction of the work \textit{Training diffusion models with reinforcement learning} \cite{black2023training} that introduces policy optimization algorithms to adapt pre-trained diffusion models to new tasks.
+    \item Empirical analysis of reward signals during the sample trajectories of the diffusion process.
+    \item Incorporating baseline and the intermediate steps reward to training the policy, extending and comparing the results to the original work \citep{black2023training}.
 \end{enumerate}
 
 We first need to understand the basics of diffusion models, \textbf{Chapter 2} provide a background of this kind of generative models, how can formulate the model as a Markov chain, the training objective, how can we condition information or guide the model sample generation, and discuss improvements over the vanilla formulation as well as some of recent advances in the field. 
@@ -46,4 +48,4 @@ The next step is a quick journey through the Reinforcement Learning (RL) field i
 
 We want to build an agent on top of a pretrained diffusion model that can teach the model to generate samples that satisfy the objective of our agent driven by a reward. In \textbf{Chapter 4}, equipped with the necessary background, we will explore the intersection between diffusion models and reinforcement learning. At the end, we will reproduce the work in \cite{black2023training} that introduces such conecction between the two fields using a smaller model, and then we will discuss the challenges and opportunities of this approach. 
 
-Finally, in \textbf{Chapter 5} we will present the results of our experiments, and we will discuss the implications of our findings.
+Finally, in \textbf{Chapter 5} we will present the conclusion of this work and some future directions.

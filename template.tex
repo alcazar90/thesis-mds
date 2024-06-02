@@ -9395,3 +9395,13 @@
 
 % Comentarios...
 \newcommand{\ca}[1]{{\textcolor{red}{[#1]}}}
+
+% código para abstract en español
+\newenvironment{abstractdesp}{%
+	\ifthenelse{\isundefined{\abstracttable}}{%
+		\def\abstracttable {}}{%
+	}%
+	\begin{abstractenv}{\abstracttableesp}{\documenttitleesp}{\nameabstract}{abstractbookmark}%
+	}{%
+	\end{abstractenv}%
+}
