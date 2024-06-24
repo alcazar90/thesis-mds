@@ -1,27 +1,24 @@
 \chapter{Diffusion Models}
 
-\ca{Asegurarme la consistencia de notación con $\mathrm{x}$ y no $x$.}
-
 \begin{figure}[ht]
     \centering
     \includegraphics[scale=0.22]{ch2-diffusion-models/fwd_noise.png}
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{Grogu (aka baby Yoda) through a forward process...\ca{Ver como mejorar estas imagen en resolución...}}
+    \caption{Grogu (aka Baby Yoda) joins with the Force through a forward process.}
     \label{fig:fwd-process-grogu}
 \end{figure}
   
 In this chapter, we introduce the Diffusion Model, a family of generative models that have proven to be a valuable framework for novel image generation, text-to-image, text-to-video, and practical applications such as molecular graph modeling and medical image reconstruction \citep{sohldickstein2015deep, ramesh2021zeroshot,rombach2022highresolution,ho2020denoising,singer2022makeavideo,jing2023torsional,song2020denoising}. Proving to be a useful tool and keep this kind of model to be an active research line in the last few years \citep{yang2024diffusion}. \\
 
-We will review the formulation proposed in the work titled \textit{Denoising Diffusion Probabilistic Models} \cite{ho2020denoising}, or DDPM for short. 
-The primary motivation for basing the discussion of diffusion models on this work is to understand how the pretrained model that this work is based on was trained. In addition, it serves as a framework to understand subsequent improvements and enhancements without significant modifications to the primary ingredients of the recipe. Furthermore, it has a deep connection with theoretical work of score-based generative models \citep{song2020denoising} and Variational Autoencoders \citep{luo2022understanding}.
+\noindent We will review the formulation proposed in the work titled \textit{Denoising Diffusion Probabilistic Models} \cite{ho2020denoising}, or DDPM for short. The primary motivation for basing the discussion of diffusion models on this work is to understand how the pretrained model that this work is based on was trained. In addition, it serves as a framework to understand subsequent improvements and enhancements without significant modifications to the primary ingredients of the recipe. Furthermore, it has a deep connection with theoretical work of score-based generative models \citep{song2020generative} \citep{song2020improved} \citep{song2021scorebased} and Variational Autoencoders \citep{luo2022understanding}.
 
 \section{Denoising Diffusion Probabilistic Models}
 
-The key idea in denoising diffusion probabilistic models (DDPM) is to learn a mapping from a complex data distribution to a simple prior distribution, such as a Gaussian. This is achieved by successively corrupting the data with noise, transforming observations of the complex distribution into observations of the simple one. Concurrently, a model is trained to denoise the sequence of noisy observations and recover the original data.\\
+The key idea in Denoising Diffusion Probabilistic Models (DDPM) is to learn a mapping from a complex data distribution to a simple prior distribution, such as a Gaussian. This is achieved by successively corrupting the data with noise, transforming observations of the complex distribution into observations of the simple one. Concurrently, a model is trained to denoise the sequence of noisy observations and recover the original data.\\
 
-Concretely, a forward process which starts from the raw image $\mathrm{x}_{0}$ (or whatever input) and creates a sequence of intermediate steps between $\mathrm{x}_{1}$ and $\mathrm{x}_{T-1}$, also known as latent states, which are noise perturbations in some degree of the original image's structure as shown in Figure~\ref{fig:fwd-process-grogu}. At the end of the sequence $T$---\textit{if the chain large is infinitely large}---the image is ultimately converting into an isotropic Gaussian noise $p(\mathrm{x}_{T})\sim \mathcal{N}(\mathrm{0}, \mathrm{I})$\footnote{Isotropic is a fancy word for ``equal shape'', and in this context means that the direction of the covariance matrix is all equal.}.\\
+\noindent Concretely, a forward process which starts from the raw image $\mathrm{x}_{0}$ (or whatever input) creates a sequence of intermediate steps between $\mathrm{x}_{1}$ and $\mathrm{x}_{T-1}$, also known as latent states, which are noise perturbations in some degree of the original image's structure as shown in Figure~\ref{fig:fwd-process-grogu}. At the end of the sequence $T$---\textit{if the chain large is infinitely large}---the image is ultimately converting into an isotropic Gaussian noise $p(\mathrm{x}_{T})\sim \mathcal{N}(\mathrm{0}, \mathrm{I})$\footnote{Isotropic is a fancy word for ``equal shape'', and in this context means that the direction of the covariance matrix is all equal.}.\\
 
-The authors model this forward process $q(\mathrm{x}_{1}\dots\mathrm{x}_{T}\mid\mathrm{x}_{0})$ as a Markov chain, and it is follow a normal distribution without learnable parameters (kernel). 
+\noindent The authors model this forward process $q(\mathrm{x}_{1}\dots\mathrm{x}_{T}\mid\mathrm{x}_{0})$ as a Markov chain, and it is follow a transition normal distribution without learnable parameters (aka kernel). 
 \begin{align}\label{eqn:forward-process}
 q(\mathbf{x}_{1:T}\mid\mathrm{x}_0) &= \prod_{t=1}^{T}q(\mathrm{x}_t\mid\mathrm{x}_{t-1})
 \\
@@ -29,7 +26,7 @@ q(\mathrm{x}_t\mid\mathrm{x}_{t-1}) &= \mathcal{N}(\mathrm{x}_t;\sqrt{1-\beta_{t
 \end{align}
 A deterministic noise scheduler is known beforehand and provides the
 amount of noise $\beta_{t}$ for any timestep $t$ of the Markov chain to
-generate $\mathrm{x}_{t}$ . How do we think about the latent space? The scale-location transformation\footnote{A quick recap about normal distributions, if $Z$ is a standard normal random variable and $X=\mu + \sigma Z$, then $X$ is a normal random variable with mean $\mu$ and variance $\sigma^2$, i.e. $X\sim\mathcal{N}(\mu, \sigma^2)$.} of $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})\sim\mathcal{N}(\mathrm{x}_{t}; \sqrt{1-\beta_{t}} \mathrm{x}_{t-1}, \beta_{t}I)$ allows us to sample the \textcolor{orange}{current latent state $\mathrm{x}_{t}$ as a mixture} of the 
+generate $\mathrm{x}_{t}$ . How do we think about the latent space? The scale-location transformation\footnote{A quick recap about normal distributions: if $Z$ is a standard normal random variable and $X=\mu + \sigma Z$, then $X$, then $X$ is a normal random variable with mean $\mu$ and variance $\sigma^2$, i.e., $X\sim\mathcal{N}(\mu, \sigma^2)$.} of $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})\sim\mathcal{N}(\mathrm{x}_{t}; \sqrt{1-\beta_{t}} \mathrm{x}_{t-1}, \beta_{t}I)$ allows us to sample the \textcolor{orange}{current latent state $\mathrm{x}_{t}$ as a mixture} of the 
 \textcolor{violet}{perturbation injected from noise} $\epsilon_{t-1}$ and \textcolor{teal}{the remaning structure
 of the data} from the previous latent state $\mathrm{x}_{t-1}$.
 
@@ -38,27 +35,24 @@ of the data} from the previous latent state $\mathrm{x}_{t-1}$.
     \textcolor{orange}{\mathrm{x}_{t}} = \textcolor{teal}{\sqrt{1-\beta_{t}}}~ \mathrm{x}_{t-1} + \textcolor{violet}{\sqrt{\beta_{t}}}~\mathrm{\epsilon}_{t-1}
 \end{equation}
 At the same time, there is a backward process---\textit{another Markov chain but in this case in the reverse timestep direction and with a learnable transition kernel}---model by $p_{\theta}(\mathrm{x}_{T:0})$. Specifically, 
-the backward process takes the following form
+the backward process takes the following form:
 \begin{align}\label{eqn:backward-process}
     p_{\theta}(\mathrm{x}_{T:0}) &= p(\mathrm{x}_{T})\prod_{t=1}^{T}p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})
     \\
     p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x_{t}}) &= \mathcal{N}(\mathrm{x}_{t-1};~\mu_{\theta}(\mathrm{x}_{t}, t),~\Sigma_{\theta}(\mathrm{x}_{t}, t))
 \end{align}
-We know that $p(\mathrm{x}_{T})$ is a standard normal distribution when $\beta_{T}\approx 1$ in Eq.~\ref{eqn:scale-location-transformation}. Additionally, as we will see in the following sections, there are design options for learning 
-the parameters of the kernel mentioned above. However, in most cases where the data distribution is complex, such as with images or audio, the kernel parameters are parameterized by deep neural networks.\\
+We know that $p(\mathrm{x}_{T})$ is a standard normal distribution when $\beta_{T}\approx 1$ in Equation~\ref{eqn:scale-location-transformation}. Additionally, as we will see in the following sections, there are design options for learning 
+the parameters of the kernel mentioned above. However, in most cases where the data distribution is complex, such as with images or audio, the kernel are parameterized by deep neural networks.\\
 
 \section{Recursive Reparameterization Trick}\label{sec:reparameterization-trick}
 
 % https://stats.stackexchange.com/questions/199605/how-does-the-reparameterization-trick-for-vaes-work-and-why-is-it-important
 % https://web.archive.org/web/20160418040123/http://dpkingma.com/wordpress/wp-content/uploads/2015/12/talk_nips_workshop_2015.pdf
-The \textit{reparameterization trick} originally appears in the work that introduce the Variational Autoencoder (VAE) model \cite{kingma2013auto} and is also used in the diffusion framework with some modifications. The main goal in the VAE context is to remove the stochasticity of a node variable that depends on parameters from the distribution, \href{https://web.archive.org/web/20160418040123/http://dpkingma.com/wordpress/wp-content/uploads/2015/12/talk_nips_workshop_2015.pdf}{leaving the stochastic part as the noise instantiated in a separate node} (\ca{agregar diagrama de presentación Kignma? o reproducción de este?}). As simple as it appears, this trick makes it possible to create a computational graph to properly backpropagate and update the parameters during training. Nevertheless, in the diffusion context, we will
+The \textit{reparameterization trick} originally appears in the work that introduce the Variational Autoencoder (VAE) model \cite{kingma2013auto} and is also used in the diffusion framework with some modifications. The main goal in the VAE context is to remove the stochasticity of a node variable that depends on parameters from the distribution, \href{https://web.archive.org/web/20160418040123/http://dpkingma.com/wordpress/wp-content/uploads/2015/12/talk_nips_workshop_2015.pdf}{leaving the stochastic part as the noise instantiated in a separate node}. As simple as it appears, this trick makes it possible to create a computational graph to properly backpropagate with automatic differentiation frameworks such as PyTorch or JAX, and update the parameters during training. Nevertheless, in the diffusion context, we will
 see that a \textit{recursive} application of the reparameterization trick achieve more than just enabling backpropagation. \\
 
-Let $\alpha_{t}=1 - \beta_{t}$ and $\bar{\alpha}_{t}=\prod_{i=1}^{t}\alpha_{i}$. Now we proceed to unwind the $t$ index until $t=0$ in the sampling formula
-that we can sample from any arbitrary normal distribution just scaling the
-normal standard distribution $\sim \mathcal{N}(0, \sigma^2)$ accordingly its
-parameters:
-\begin{equation}\label{reparameterization-trick}
+\noindent Let $\alpha_{t}=1 - \beta_{t}$ and $\bar{\alpha}_{t}=\prod_{i=1}^{t}\alpha_{i}$. Now we proceed to unwind the $t$ index until $t=0$ in Equation~\ref{eqn:scale-location-transformation}, we ended up with a reparametrization of $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})$ in terms of $\mathrm{x}_{0}$, and it is possible to sample from it by scaling the normal standard distribution $\sim \mathcal{N}(0, \sigma^2)$ accordingly its parameters:
+\begin{equation}\label{eqn:reparameterization-trick}
     \begin{split}
             \mathrm{x}_{t} & = \sqrt{\alpha_{t}}~\mathrm{x}_{t-1} + \sqrt{1-\alpha_{t}}~\epsilon_{t-1} \\
              & = \sqrt{\alpha_{t}}~(\sqrt{\alpha_{t-1}}~\mathrm{x}_{t-2} + \sqrt{1 - \alpha_{t-1}}~\epsilon_{t-2}) + \sqrt{1-\alpha_{t}}~\epsilon_{t-1} \\
@@ -68,32 +62,29 @@ parameters:
              &= \sqrt{\alpha_{t}~\alpha_{t-1}\dots\alpha_{0}}~\mathrm{x}_{0} + \sqrt{1 - \alpha_{t}~\alpha_{t-1}\dots\alpha_{0}}~\bar{\epsilon}_{0} \\
              &= \sqrt{\prod_{i=1}^{t}\alpha_{i}}~\mathrm{x}_{0} + \sqrt{1 - \prod_{i=1}^{t}\alpha_{i}}~\bar{\epsilon}_{0} \\
              &= \sqrt{\bar{\alpha}_{t}}~\mathrm{x}_{0} + \sqrt{1 - \bar{\alpha}_
-             {t}}~\bar{\epsilon}_{0} \\
-            q(\mathrm{x}_{t}\mid \mathrm{x}_{0}) & = \mathcal{N}(\mathrm{x}_{t};\sqrt{\bar{\alpha}_{t}}~\mathrm{x}_{0}, (1-\bar{\alpha}_{t})\mathrm{I})
+             {t}}~\bar{\epsilon}_{0} 
     \end{split}
 \end{equation}
 Technically, what happens in the above derivation is that the choice of a Gaussian transition kernel $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})$ allows us to
-\textcolor{teal}{group pairs of Gaussians into a single one, remaining a Gaussian distribution, by just summing up their means and variances}.  By repeteadly performing this trick, we end up marginilizing the joint distribution in Equation~\ref{eqn:forward-process} to obtain an analytical form of $q(\mathrm{x}_{t}\mid \mathrm{x}_{0})$ for all timesteps $t\in\{0, 1, \dots, T\}$, as shown in \shortcite{sohldickstein2015deep}. The remarkable consequence of having a closed form is the ability to sample from $\mathrm{x}_{0}\rightarrow \mathrm{x}_{t}$ without explicitly passing through intermediate steps $\mathrm{x}_{1}, \dots, \mathrm{x}_{t-1}$. Therefore, we can go from $\mathrm{x}_{0}$ to any arbitrary $t$ in just one evaluation---\textit{since $\bar{\alpha}$ is known in advance given the noise scheduler}---making the whole DDPM framework computationally feasible.
+\textcolor{teal}{group pairs of Gaussians into a single one, remaining a Gaussian distribution, by just summing up their means and variances}.  By repeteadly aplying this property, we end up marginilizing the joint distribution in Equation~\ref{eqn:forward-process} to obtain an analytical form of $q(\mathrm{x}_{t}\mid \mathrm{x}_{0})$ for all timesteps $t\in\{0, 1, \dots, T\}$ \shortcite{sohldickstein2015deep}. 
+\begin{equation}\label{eqn:marginilize_q_xt_on_x0}
+    q(\mathrm{x}_{t}\mid \mathrm{x}_{0}) = \mathcal{N}(\mathrm{x}_{t};\sqrt{\bar{\alpha}_{t}}~\mathrm{x}_{0}, (1-\bar{\alpha}_{t})\mathrm{I})
+\end{equation}
+The remarkable consequence of having a closed form is the ability to sample from $\mathrm{x}_{0}\rightarrow \mathrm{x}_{t}$ without explicitly passing through intermediate steps $\mathrm{x}_{1}, \dots, \mathrm{x}_{t-1}$. Therefore, we can go from $\mathrm{x}_{0}$ to any arbitrary $t$ in just one evaluation---\textit{since $\bar{\alpha}$ is known in advance given the noise scheduler}---making the whole DDPM framework computationally feasible.
 
 \section{Optimization}
 
-\ca{\textbf{TODO:} partir directamente con la función de pérdida y especificando que en el paper de DDPM solo se parametriza el backward kernel para aprender la mediana. Especificmente, se aprende indirectamente a través de una reparametrización para aprender el ruido. La varianza es constante dependiente del tiempo y esta definiida por el noise scheduler.}
-
-For training DDPM, the paper only uses the mean squared error (MSE) loss to optimize the backward kernel parameters. The MSE loss is defined as the expected value of the squared difference between the noise perturbation $\epsilon$ and the noise perturbation generated by the backward kernel $\epsilon_{\theta}$. The MSE loss is defined as follows: \\
-
-The train objective defined in DDPM is the following loss, they choose to
-paramterized the backward kernel only with the mean as a learnable parameter, 
-and use a fixed time constant $\sigma_{t}^{2}=\sigma^{2}$ for all timesteps $t$:
+We can sample a batch of inputs from the data distribution $\mathrm{x}_{0}\sim q(\mathrm{x}_{0})$, such as images, and corrupt them with noise $\epsilon\sim\mathcal{N}(0, I)$ according to a scale factor $\bar{\alpha}_{t}$, obtaining the latent states from the timesteps $t\sim\mathcal{U}[1, T]$ using Equation~\ref{eqn:reparameterization-trick}. For training DDPM, the authors choose only to learn the mean of the backward kernel and use a time-dependent constant variance $\sigma_{t}^{2}$ for all $t$\footnote{Authors add a diagonal learnable variance $\Sigma_{\theta}(\mathrm{x}_{t})$ but they obtained unstable training and poor sample quality. In following work they...\ca{complete this...}}. Rather than learning the mean of the backward kernel directly, they achieve this indirectly by predicting the noise perturbation $\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})$. The training objective defined in DDPM is the following:
 \begin{equation}\label{eqn:ho-eq12}
-    \mathbb{E}_{t\sim\mathcal{U}[1, T], \mathrm{x}_{0}\sim q(\mathrm{x}_{0}), \epsilon\sim\mathcal{N}(0, \mathrm{I}))} = \big[\lambda(t) ~ \|\epsilon - \epsilon_{\theta}(\mathrm{x}_{t}, t) \|^{2} \big]
+    \mathbb{E}_{t\sim\mathcal{U}[1, T], \mathrm{x}_{0}\sim q(\mathrm{x}_{0}), \epsilon\sim\mathcal{N}(0, \mathrm{I})}  \big[\lambda(t) ~ \|\epsilon - \epsilon_{\theta}^{(t)}(\mathrm{x}_{t}) \|^{2} \big]
 \end{equation}
-Where $\lambda(t)= \beta_{t}^{2} / 2\sigma_{t}^{2}\alpha_{t}(1-\bar{\alpha}_{t})$. Even it can simplify without any significant sample quality in...
+Where $\lambda(t)= \beta_{t}^{2} / 2\sigma_{t}^{2}\alpha_{t}(1-\bar{\alpha}_{t})$. Empirical results shows that it is possible to discard $\lambda(t)$ without affecting sample quality, resulting in the following simplified objective:
 \begin{equation}\label{eqn:ho-eq14}
-    \mathbb{E}_{\mathrm{x}_{0}, \epsilon} \big[\| \epsilon - \epsilon_{\theta} ||^{2} \big]
+    \mathbb{E}_{t\sim\mathcal{U}[1, T], \mathrm{x}_{0}\sim q(\mathrm{x}_{0}), \epsilon\sim\mathcal{N}(0, \mathrm{I})} \big[\| \epsilon - \epsilon_{\theta}^{(t)}(\sqrt{\bar{\alpha}_{t}}~\mathrm{x}_{0} + \sqrt{1-\bar{\alpha}_{t}}~\epsilon) ||^{2} \big]
 \end{equation}
-The simplified loss is just a mean squared error and we can train a DDPM
-model using the algorithm XYZ.
-\begin{figure}[ht]
+The simplified loss is just a mean squared error, and a description of the
+training procedure is shown in Algorithm 1. Notice that the backward process $p_{\theta}(\mathrm{x}_{1:T})$ is parameterized by a collection of $T$ denoiser functions $\epsilon_{\theta}^{(t)}$ with learnable parameters $\theta^{(t)}$.
+\begin{figure}[ht]\label{alg:ddpm-training-sampling}
     \begin{minipage}{0.45\textwidth}
     \begin{algorithm}[H]
         \caption{DDPM Training}
@@ -103,7 +94,7 @@ model using the algorithm XYZ.
             \STATE  ~~~~$t\sim \mathcal{U}(1, T)$
             \STATE  ~~~~$\epsilon\sim \mathcal{N}(0, \mathrm{I})$
             \STATE  ~~~~Take gradient descent step on
-            \STATE  $~~~~~~~~\nabla_{\theta}\|\epsilon - \epsilon_{\theta}(\sqrt{\bar{\alpha}_{t}}\mathrm{x}_{0} + \sqrt{1-\bar{\alpha}_{t}}\epsilon, t) \|^{2}$
+            \STATE  $~~~~~~~~\nabla_{\theta}\|\epsilon - \epsilon_{\theta}^{(t)}(\sqrt{\bar{\alpha}_{t}}\mathrm{x}_{0} + \sqrt{1-\bar{\alpha}_{t}}\epsilon) \|^{2}$
             \STATE \textbf{until} converged
         \end{algorithmic}
     \end{algorithm}
@@ -117,7 +108,7 @@ model using the algorithm XYZ.
         \STATE  $\mathrm{x}_{T}\sim\mathcal{N}(\mathrm{0}, \mathrm{I})$
         \FOR{$t=T, \dots, 1$}
             \STATE $\mathrm{z}\sim\mathcal{N}(0, \mathrm{I})$
-            \STATE $\mathrm{x}_{t-1}=\frac{1}{\sqrt{\alpha_{t}}} \bigg(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}(\mathrm{x}_{t}, t)\bigg) + \sigma_{t}\mathrm{z}$
+            \STATE $\mathrm{x}_{t-1}=\frac{1}{\sqrt{\alpha_{t}}} \bigg(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})\bigg) + \sigma_{t}\mathrm{z}$
         \ENDFOR
         \STATE \textbf{return} $\mathrm{x}_{0}$
         \end{algorithmic}
@@ -125,12 +116,8 @@ model using the algorithm XYZ.
     \end{minipage}
     \end{figure}
 
-\ca{Para entender la reparametrización del backward kernel para usar un epsilon}.\\
 
-\ca{\textbf{Importante:} la reparametrización que aparece en el algoritmo de
-sampling, la derivación para llegar a esta se encuentra en \href{https://lilianweng.github.io/posts/2021-07-11-diffusion-models/}{post de difusion de Lilian Weng} } \\
-
-In the next sections we will justify the use of the above loss function and the training algorithm in the context of the Variational Lower Bound (VLB).
+\noindent In the next sections we will justify the use of the above loss function and the training algorithm in the context of the Variational Lower Bound (VLB).
 
 \subsection{Variational Lower Bound}\label{sec:variational-lower-bound}
 
@@ -139,66 +126,74 @@ In the next sections we will justify the use of the above loss function and the 
     % o usando Jensen Inequality. En paper summary se ocupa KL, se podría
     % mostrar esa conciliaición...
 
-    DDPM are training by optimizing the Variational Lower Bound (VLB)
-    on the negative log-likelihood.\ca{Referencia al apendica A del paper de DDPM.}
-    \begin{equation}\label{eqn:ELBO1}
+DDPM are training by optimizing the Variational Lower Bound (VLB)
+on the negative log-likelihood of the learnable distribution.
+\begin{equation}\label{eqn:ELBO1}
     \begin{split} 
-    -\log p_{\theta}(\mathrm{x}_{0}) &= -\log\int p_{\theta}(\mathrm{x}_{0:T}) d\mathrm{x}_{1:T} \\
-    &= -\log \int \frac{p_{\theta}(\mathrm{x}_{0:T})q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}d\mathrm{x}_{1:T} \\
-    &= - \log \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_0)} \bigg[\frac{p_{\theta}(\mathrm{x}_{0:T})}{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})} \bigg] \\
-    % -\log p_{\theta}(\mathrm{x}_{0}) 
-    & \leq \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[-\log \frac{p_{\theta}(\mathrm{x}_{0:T})}{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg] \\
-    &\leq \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t\geq 1}^{T} \log\frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})} \bigg] \\
-    L &:= \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg]
+        -\log p_{\theta}(\mathrm{x}_{0}) &= -\log\int p_{\theta}(\mathrm{x}_{0:T}) d\mathrm{x}_{1:T} \\
+        &= -\log \int \frac{p_{\theta}(\mathrm{x}_{0:T})q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}d\mathrm{x}_{1:T} \\
+        &= - \log \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_0)} \bigg[\frac{p_{\theta}(\mathrm{x}_{0:T})}{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})} \bigg] \\
+        % -\log p_{\theta}(\mathrm{x}_{0}) 
+        & \leq \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[-\log \frac{p_{\theta}(\mathrm{x}_{0:T})}{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg] \\
+        &\leq \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t\geq 1}^{T} \log\frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})} \bigg] \\
+        L &:= \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg]
     \end{split}
-    \end{equation}
-    \ca{Actualizar párrafo, ahora Jensen inequality se aplica en el paso 3...}
-    The first relationship in \ref{eqn:ELBO1} can be justified by the Jensen's inequality, and the second relationship is a direct consequence of the Markov property in both the forward and backward processes. Also, notice that we decouple the last term $\mathrm{x}_{T}$ from $p_{\theta}(\mathrm{x}_{0:T})$ because,
-    for a sufficiently large sequence $T\gg$, we know that we will get a final state described by $\mathcal{N}(0, \sigma^2\mathrm{I})$. Therefore, we keep it separate in the same way as the first transition step $\mathrm{x}_{0}\mid\mathrm{x_{1}}$ and $\mathrm{x}_1\mid\mathrm{x}_0$ that involves the raw data $\mathrm{x}_{0}$ in each process.\\
+\end{equation}
+
+\noindent The first step in Equation~\ref{eqn:ELBO1} is to apply the definition of the negative log-likelihood and integrate out $\mathrm{x}_{1:T}$ from the
+joint distribution $p_{\theta}(\mathrm{x}_{0:T})$. Then, we multiply by 1,
+introducing $q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})/q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})$, and use the expectation operator. We use the Jensen's inequality to bound the negative log-likelihood by the expectation of the negative log-likelihood. \\
+
+\noindent In the last steps, we decompose the expectation into the sum of the negative log-likelihood of the forward and backward processes, applying the Markov property to both. Notice the last term $\mathrm{x}_{T}$ is decouple from $p_{\theta}(\mathrm{x}_{0:T})$ because, for a sufficiently large sequence $T\gg$, we know that we will get a final state described by $\mathcal{N}(0, \sigma^2\mathrm{I})$. Therefore, we keep it separate in the same way as the first transition step $\mathrm{x}_{0}\mid\mathrm{x_{1}}$ and $\mathrm{x}_1\mid\mathrm{x}_0$ that involves the raw data $\mathrm{x}_{0}$ in each process.\\
     
-    We obtain the training objective from the VLB following the derivations in \cite{sohldickstein2015deep} and \cite{ho2020denoising}: \ca{cambiar todos los $x$ a $\mathrm{x}$ y usar mid en vez de la línea vertical |}
-    For space constraint, we are referring to $\mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}$ when it appears $\mathbb{E}_{q}$.
-    \begin{equation}\label{eqn:ELBO2}
+\noindent The training objective is derived from the VLB, following the methods outlined in the relevant literature \cite{sohldickstein2015deep}\cite{ho2020denoising}\cite{luo2022understanding}. Due to space constraints, we refer to $\mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}$ as $\mathbb{E}_{q}$.
+
+\begin{equation}\label{eqn:ELBO2}
     \begin{split}
-     L_{\text{\scriptsize{\text{VLB}}}} & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
-    & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t},~\mathrm{x}_{0})}}\frac{\textcolor{lightgray}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{0})}}{\textcolor{violet}{q(\mathrm{x}_{t}\mid\mathrm{x}_{0})}}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
-    & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t},~\mathrm{x}_{0})}} -\sum_{t>1}^{T}\log \frac{\textcolor{lightgray}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{0})}}{\textcolor{violet}{q(\mathrm{x}_{t}\mid\mathrm{x}_{0})}}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
-    & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}}- \log\frac{\textcolor{orange}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}}{\textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})}} -\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
-    & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}}- \log\textcolor{orange}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})} + \log \textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})} -\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
-    & = \mathbb{E}_{q}\bigg[-\big(\log p(\mathrm{x}_{T}) - \log \textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})}\big) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}} - \big( \log\textcolor{orange}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}  +\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(x_{1}\mid\mathrm{x}_{0})}\big)\bigg]  \\ 
-    & = \mathbb{E}_{q}\bigg[-\log \frac{p(\mathrm{x}_{T})}{\textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})}} - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}} -  \log p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})\bigg]  \\
-    & = \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[\underbrace{D_{\text{\scriptsize{KL}}}\big(\textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})} ||~p(\mathrm{x}_{T}) \big)}_{L_{T}} + \sum_{t>1}^{T} \underbrace{D_{\text{\scriptsize{KL}}}\big( \textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}||~p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}) \big)}_{L_{t-1}} -  \underbrace{\log p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}_{L_{0}} \bigg]
+        L_{\text{\scriptsize{\text{VLB}}}} & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
+        & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t},~\mathrm{x}_{0})}}\frac{\textcolor{lightgray}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{0})}}{\textcolor{violet}{q(\mathrm{x}_{t}\mid\mathrm{x}_{0})}}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
+        & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t},~\mathrm{x}_{0})}} -\sum_{t>1}^{T}\log \frac{\textcolor{lightgray}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{0})}}{\textcolor{violet}{q(\mathrm{x}_{t}\mid\mathrm{x}_{0})}}-\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
+        & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}}- \log\frac{\textcolor{orange}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}}{\textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})}} -\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
+        & = \mathbb{E}_{q}\bigg[-\log p(\mathrm{x}_{T}) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}}- \log\textcolor{orange}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})} + \log \textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})} -\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\bigg] \\
+        & = \mathbb{E}_{q}\bigg[-\big(\log p(\mathrm{x}_{T}) - \log \textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})}\big) - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}} - \big( \log\textcolor{orange}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}  +\log\frac{p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}{q(\mathrm{x}_{1}\mid\mathrm{x}_{0})}\big)\bigg]  \\ 
+        & = \mathbb{E}_{q}\bigg[-\log \frac{p(\mathrm{x}_{T})}{\textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})}} - \sum_{t>1}^{T} \log \frac{p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})}{\textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}} -  \log p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})\bigg]  \\
+        & = \mathbb{E}_{q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})}\bigg[\underbrace{D_{\text{\scriptsize{KL}}}\big(\textcolor{violet}{q(\mathrm{x}_{T}\mid\mathrm{x}_{0})} ||~p(\mathrm{x}_{T}) \big)}_{L_{T}} + \sum_{t>1}^{T} \underbrace{D_{\text{\scriptsize{KL}}}\big( \textcolor{teal}{q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})}||~p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}) \big)}_{L_{t-1}} -  \underbrace{\log p_{\theta}(\mathrm{x}_{0}\mid\mathrm{x}_{1})}_{L_{0}} \bigg]
     \end{split}
-    \end{equation}
+\end{equation}
 
-    \begin{enumerate}
-        \item We isolated $\log q(\mathrm{x}_{t}\mid\mathrm{x}_{0})$ with $\log p(\mathrm{x}_{T})$ because both are invariant by the learning process.
-        \item We reverse by Bayes theorem $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})$ by $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})$ without affecting the markov property \ca{revisar vericidad de esto...}.
-        \item The first both terms in Eq.~\ref{eqn:ELBO2} appears by the Kullback-Leibler divergence definition. 
-    \end{enumerate}
+\noindent The key points from the above derivation are as follows: 
+\begin{enumerate}
+    \item Isolating  $\log q(\mathrm{x}_{t}\mid\mathrm{x}_{0})$ with $\log p(\mathrm{x}_{T})$ because both are invariant by the learning process.
+    \item Reversing $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})$ by $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})$ (bayes theorem) without affecting the Markov property \ca{revisar vericidad de esto...}.
+    \item The first two terms at the end of Equation~\ref{eqn:ELBO2} appear due to the definition of the Kullback-Leibler divergence. 
+\end{enumerate}
     
 
-    In summary, the variational lower bound loss is a sum of terms that arise from the reverse diffusion process $L_{\text{\scriptsize{\text{VLB}}}}=L_{T} + L_{T-1} + \dots + L_{0}$. The last term $L_{T}$ can be discard because
-    is constant given thatt $q$ has not learnable parameters and $\mathrm{x}_{T}$ is a standard normal distribution. The remaining terms are the denoising matching terms that are the most important in the loss function because they have the most number of terms.\\
+\noindent In summary, the variational lower bound loss is a sum of terms that result from the reverse diffusion process $L_{\text{\scriptsize{\text{VLB}}}}=L_{T} + L_{T-1} + \dots + L_{0}$. The final term $L_{T}$ can be discarded because
+it is constant, given that $q$ has not learnable parameters and $\mathrm{x}_{T}$ follows a standard normal distribution. The remaining terms are the denoising matching terms, which are crucial in the loss function because their number depends on the length of diffusion chain $T$ (e.g. $T=1000$ in DDPM).\\
 
 \subsection{Denoising Matching Term}
+
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.8]{ch2-diffusion-models/DDPM-HMVAE-simple.png}
   \captionsetup{width=\textwidth} % set the width of the caption
-  \caption{\textbf{Denoising matching term in action.} $\mathrm{x}_{T}$ is a pure Gaussian noise. In the middle square, it highlights the transition from a noisy intermediate state to a less noisy one; the denoising matching term forces $p_{\theta}$ to be similar to the posterior forward kernel $q(\mathrm{x}_{t-1}\mid \mathrm{x}_{t})$. $\mathrm{x}_{0}$ the input image during training or the final sample at inference mode. \ca{Simplicar este caption esta muy verboso.}}
+  \caption{\textbf{Denoising matching term in action.} \textbf{Left:} $\mathrm{x}_{T}$ is a pure Gaussian noise. \textbf{Middle:} Transition from a noisy intermediate state to a less noisy one; the denoising matching term forces $p_{\theta}$ to be similar to the posterior forward kernel $q(\mathrm{x}_{t-1}\mid \mathrm{x}_{t})$. \textbf{Right:} $\mathrm{x}_{0}$ the input image during training.}
   \label{fig:ddpm-denoising-term}
 \end{figure}
-The model goal is to reduce the discrepancy measured by the Kullback-Leibler divergence between the posterior of the encoder, which tell us how to remove the real noise, and the decoder, which predicts to ``reverse'' the processes and has learnable parameters $(\theta)$. Therefore, the loss constitutes a sum of denoising matching terms across the diffusion sequence as it show in Figure~\ref{fig:ddpm-denoising-term}. \\
 
-However, the problem is that reverse the diffusion process $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})$ is intractable because requires the entire dataset to compute it, but we can conditioning on $\mathrm{x}_{0}$ to make it tractable and get the following expression (Lilian Weng \citep{weng2021diffusion}):
+The model's goal is t minimize the discrepancy, measured by the Kullback-Leibler divergence, between the posterior of the encoder---\textit{which tells us how to remove the real noise}---and the decoder, which predicts how to ``reverse'' the processes and has learnable parameters $\theta$. Therefore, the loss consists of a sum of denoising matching terms across the diffusion sequence, as shown in Figure~\ref{fig:ddpm-denoising-term}. \\
+
+\noindent However, reversing the diffusion process $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})$ is intractable because it requires the entire dataset to compute it. We can make it tractable by conditioning on $\mathrm{x}_{0}$, leading to the following expression (See \citep{weng2021diffusion} for a detailed derivation):
+
 \begin{align}\label{eqn:reverse-forward-process}
-    q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0}) &= \mathcal{N}(\mathrm{x}_{t-1};~\tilde{\mu}(\mathrm{x}_{t}, \mathrm{x}_{0}, t), \tilde{\beta}_{t}I) \\
-    \tilde{\mu}(\mathrm{x}_{t}, t) &= \frac{1}{\sqrt{\alpha_{t}}}\bigg(\mathrm{x}_{t} - \frac{1 - \alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}} \epsilon_{t} \bigg) 
-    % \\ \tilde{\beta}_{t} &= x
+    q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0}) &= \mathcal{N}(\mathrm{x}_{t-1};~\tilde{\mu}_{t}(\mathrm{x}_{t}, \mathrm{x}_{0}), \tilde{\beta}_{t}I) \\
+    \tilde{\mu}_{t}(\mathrm{x}_{t}, \mathrm{x}_{0}) &:= \frac{\sqrt{\bar{\alpha}_{t-1}}\beta_{t}}{1-\bar{\alpha}_{t}}\mathrm{x}_{0} + \frac{\sqrt{\alpha_{t}}(1 - \bar{\alpha}_{t-1})}{1-\bar{\alpha}_{t}}\mathrm{x}_{t} \\
+    \tilde{\beta}_{t} &:= \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_{t}}\beta_{t}
 \end{align}
-Another important aspect is the parameterization of $p_{\theta}$ we can predict directly the latent state $\mathrm{x}_{t-1}$, or indirectly by predicting the noise perturbation $\epsilon_{\theta}$ and then apply the reparameterization trick to get the latent state, given that $\mathrm{x}_{t}$ is known. Moreover,
-in Ho et al \cite{ho2020denoising} they use only the mean as a learnable parameter and the variance is set as $\Sigma_{\theta}(\mathrm{x}_{t}, t)=\sigma_{t}^2I$, a time dependent constant such as $\sigma_{t}^{2}=\beta_{t}$ or $\sigma_{t}^{2}=\tilde{\beta}_{t}$.
+
+\noindent \ca{Conectar con la intro de la sección optimization} Another important aspect is the parameterization of $p_{\theta}$ we can predict directly the latent state $\mathrm{x}_{t-1}$, or indirectly by predicting the noise perturbation $\epsilon_{\theta}$, and then apply the reparameterization trick to get the latent state, given that $\mathrm{x}_{t}$ is known. Moreover,
+in (Ho et al., 2020) \cite{ho2020denoising} they use only the mean as a learnable parameter and the variance is set as $\Sigma_{\theta}(\mathrm{x}_{t}, t)=\sigma_{t}^2I$, a time dependent constant such as $\sigma_{t}^{2}=\beta_{t}$ or $\sigma_{t}^{2}=\tilde{\beta}_{t}$.
 \begin{align}\label{eqn:backward-noise-reparameterization}
     \mu_{\theta}(\mathrm{x}_{t}, t) &= \frac{1}{\sqrt{\alpha_{t}}}\big(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}(\mathrm{x}_{t}, t)\big) \\
     \mathrm{x}_{t-1} &= \mathcal{N}\big(\mathrm{x}_{t-1}; \frac{1}{\sqrt{\alpha_{t}}}\big(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}(\mathrm{x}_{t}, t)\big), \Sigma_{\theta}(\mathrm{x}_{t}, t)\big)
@@ -209,57 +204,88 @@ $\Sigma_{\theta}(\mathrm{x}_{t}, t) = \sigma_{t}^{2}I$:
 \begin{align}\label{eqn:backward-process-fix-variance}
     p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x_{t}}) &= \mathcal{N}(\mathrm{x}_{t-1};~\mu_{\theta}(\mathrm{x}_{t}, t), \sigma_{t}^{2}I)
 \end{align}
-Therefore, we have everything to expand the denoising matching term $L_t$ with $1\leq t < T$ terms:
+Therefore, we have everything to expand the denoising matching term $L_t$ with $1\leq t < T$ terms \ca{Además, emerge de la definición de KL de sumatorias entre dos gaussiano un MSE.}:
 
-\ca{Además, emerge de la definición de KL de sumatorias entre dos gaussiano un MSE.}
-
-
-
-We can think of the above formulation as a hierarchical variational autoencoder that satisfies some properties as it is specified in \citep{luo2022understanding}. \ca{Conexión con VAE en Luo} As you can see in Figure~\ref{fig:ddpm-denoising-term}, the denoising matching term within the gray square remarks the VAE loss term. 
+\noindent \ca{Mejorar esta parte y dar más hincapie a la VLB compartida} Finally, As you can see in Figure~\ref{fig:ddpm-denoising-term}, the denoising matching term within the gray square remarks the VAE loss term. However, there are some differences between the VAE and the DDPM: (i) VAE is optimize in the latent space, while DDPM is optimize in the data space (e.g. CelebaHQ 256x256), (ii) VAE use a kernel that is learnable, while DDPM use a fixed kernel, and (iii) VAE perform a single step of sampling, while DDPM perform a large number of steps, hence is more similar to a hierarchical VAE \citep{luo2022understanding}.\\
 
 
-\subsection{Sampling}
+\subsection{Score-based generative models}\label{sec:ddpm-as-score}
 
-\ca{Describir el algoritmo de sampling brevemente...}.
+% \ca{Ver sección 24.3.2 Denoising score matching (DSM) del libro de tópicos avanzados de Murphy}
 
-\subsection{Score-based generative models}
+In this section, we aim to establish a connection between DDPM and score-based generative models \citep{song2020generative}\citep{song2020improved}\citep{song2021scorebased}. The purpose is more conceptual than practical concerning the work of this thesis, as the literature on how to condition diffusion models is built on this theoretical perspective, and it is a way to increase the degree of control over diffusion models. \\
 
-\textbf{TODO:} Explain the connection between score-based generative models and the DDPM.\\
+\noindent It turns out that the objective of Equation~\ref{eqn:ho-eq12}, derived from the variational lower bound (Section~\ref{sec:variational-lower-bound}) and the reparameterization of predicting $\epsilon_{\theta}^{(t)}$ versus directly the latent states, is equivalent to the objective function of Noise Conditional Score Network (NCSN) \citep{song2020improved}. This is a generative model that seeks to learn the data distribution through the score function. We will briefly contextualize this family of models below. \\
 
-Learning $\epsilon_{\theta}$ is equivalent to perturb the data distribution $p(x)$ in the direction of the score function $\nabla_{x}\log p(x)$, which is the gradient of the log-likelihood. This is a key idea in score-based generative models, where the model is trained to denoise the data by following the gradient of the log-likelihood.\\
+\noindent The score function $s(\mathrm{x}_{0})$ of the data distribution $q(\mathrm{x}_{0})$ is defined as the gradient of the log-likelihood w.r.t $\mathrm{x}_{0}$, i.e. $\nabla_{\mathrm{x}_{0}}\log q(\mathrm{x}_{0})$, and it is invariant to scale changes in the distribution. \\
 
-Stein no sé cuanto...
+\noindent First, let's start by model the data distribution $q(\mathrm{x}_{0})$ with $p_{\theta}(\mathrm{x}_{0})$:
+\begin{equation}\label{eqn:model-directly-density}
+    p_{\theta}(\mathrm{x}_{0}) = \frac{e^{-f_{\theta}(\mathrm{x}_{0})}}{\mathrm{Z}_{\theta}} 
+\end{equation}
+
+\noindent $f_{\theta}$ is the unnormalized probabilistic model and $\mathrm{Z}_{\theta}$ is the normalizing constant to ensure that the distribution integrates to 1.  The problem is that computing $\mathrm{Z}_{\theta}$ is intractable for high-dimensional data, but we can avoid this by inducing the score function $s_{\theta}(\mathrm{x}_{0})$ in Equation~\ref{eqn:model-directly-density}: \\
+
+\begin{equation}\label{eqn:score-function}
+    \begin{split}
+        \log p_{\theta}(\mathrm{x}_{0}) &= -f_{\theta}(\mathrm{x}_{0}) - \log \mathrm{Z}_{\theta}  \\
+        \nabla_{\mathrm{x}_{0}}\log p_{\theta}(\mathrm{x}_{0}) &= -\nabla_{\mathrm{x}_{0}} f_{\theta}(\mathrm{x}_{0}) - \cancel{\nabla_{\mathrm{x}_{0}}\log \mathrm{Z}_{\theta}} \\
+        s_{\theta}(\mathrm{x}_{0}) &= -\nabla_{\mathrm{x}_{0}} f_{\theta}(\mathrm{x}_{0})
+    \end{split}
+\end{equation}
+
+\noindent Introducción de multiples niveles de ruido $\sigma_{i}$ para lidiar con el manifold problem y obtener estimaciones del score más precisas... \\
+
+\begin{equation}
+   \mathbb{E}_{p(\mathrm{x})}\bigg[\| \nabla_{x}\log p(x) - s_{\theta}(x)\|_{2}^{2} \bigg]
+\end{equation}
+
+\begin{equation}\label{train-objective-ncsn}
+    \sum_{i=1}^{L} \lambda (i) \mathbb{E}_{p_{\sigma_{i}}(\mathrm{x})} [ \nabla_{\mathrm{x}} \log p_{\sigma_{i}}(\mathrm{x}) - s_{\theta}(\mathrm{x, i}) ]
+\end{equation}
+
+\noindent \ca{paper SDE unifican los approaches como dos casos especiales} By generalizing the number of noise scales to infinity, we further proved that score-based generative models and diffusion probabilistic models can both be viewed as discretizations to stochastic differential equations determined by score functions. This work bridges both score-based generative modeling and diffusion probabilistic modeling into a unified framework.
+
+
+\section{Sampling}\label{sec:sampling}
+
+\ca{\textbf{Importante:} la reparametrización que aparece en el algoritmo de
+sampling, la derivación para llegar a esta se encuentra en \href{https://lilianweng.github.io/posts/2021-07-11-diffusion-models/}{post de difusion de Lilian Weng} } \\
+
+Once we have trained the model, $\mathrm{x}_{0}$ is obtained by sampling from the prior $p_{\theta}(\mathrm{x}_{T})$---\textit{a Gaussian distribution $\mathcal{N}(0, \mathrm{I})$}---and then applying \textit{ancestral sampling} through the reverse markovian process to get the final sample.  The Algorithm~2 shows the sampling process in detail. \\
+
+\noindent Notice that DDPM requires training the model with a large number of steps $T$
+to allow the reverse process to be close to a Gaussian. In DDPM, the hyperparameter $T$ is set to 1000 steps. One consequence of this is that sample from model is computational expensive because the ancestral sampling obtain the next generation $t-1$ from conditioning in the current state $t$ and requires to progress for every step $t$ sequentially. \\
+
+\noindent \ca{será necesario la conexión con Langevin dynamics?} This is done by Langevin dynamics, which is a stochastic process that follows the gradient of the log-likelihood. The Langevin dynamics is defined by the following equation:
+\begin{equation}
+    \mathrm{x}_{t-1} = \mathrm{x}_{t} + \epsilon \nabla_{x}\log p(x) + \sqrt{2\epsilon}z_{t}, ~~~~~ t=0,1, \dots, T
+\end{equation}
 
     
 \section{Condition the model}
 
-\ca{Acá se salta a formulación score bared de la nada, ver como introducir antes...}
+So far, we know how to learn indirectly the unconditional probability distribution $p(\mathrm{x})$ via the score function $\nabla_{\mathrm{x}}\log p(\mathrm{x})$, but what can we do to condition $\mathrm{x}$ given a signal $\mathrm{y}$, such as a text prompt, another image, or an audio?\\
 
-So far, we know how to learn indirectly the unconditional probability distribution $p(x)$ via the score function $\nabla_{x}\log p(x)$, but what can we do to condition $x$ given a signal $y$, such as a text prompt, another image, or an audio?\\
+\noindent By Bayes' theorem, log operations, and taking the gradient w.r.t. $\mathrm{x}$ we got:
 
-By Bayes' theorem, log operations, and taking the gradient w.r.t. x we got:
-
-    \begin{equation}
-         \begin{split}
-            p(x \mid y) &= \frac{p(y \mid x) \cdot p(x)}{p(y)}\\
-            \implies \log p(x \mid y) &= \log p(y \mid x) + \log p(x) - \log p(y) \\
-            \implies \nabla_x \log p(x \mid y) &= \nabla_x \log p(y \mid x) + \nabla_x \log p(x) ,
-        \end{split}
-    \end{equation}
+\begin{equation}
+    \begin{split}
+        p(\mathrm{x} \mid \mathrm{y}) &= \frac{p(\mathrm{y} \mid \mathrm{x}) \cdot p(\mathrm{x})}{p(\mathrm{y})}\\
+        \implies \log p(\mathrm{x} \mid \mathrm{y}) &= \log p(\mathrm{y} \mid \mathrm{x}) + \log p(\mathrm{x}) - \log p(\mathrm{y}) \\
+        \implies \nabla_\mathrm{x} \log p(\mathrm{x} \mid \mathrm{y}) &= \nabla_x \log p(\mathrm{y} \mid \mathrm{x}) + \nabla_\mathrm{x} \log p(\mathrm{x}) ,
+    \end{split}
+\end{equation}
     
+\textbf{TODO:} Review and cite the following \href{https://sander.ai/2023/08/28/geometry.html}{blog posts} \cite{dieleman2022guidance} and \cite{dieleman2023geometry} about guidance.
 
-    \textbf{TODO:} Review and cite the following \href{https://sander.ai/2023/08/28/geometry.html}{blog posts} \cite{dieleman2022guidance} and \cite{dieleman2023geometry} about guidance.
+\subsection{Classifier Guidance (CG)}
 
-\subsection{Classifier Guidance}
+Once a diffusion model is trained, during the sampling process (aka denoising Gaussian noise), we can attach a cost function that "guides" the denoising process toward some desired condition, such as colour or text embedding from a prompt that matches a text caption, gets by the image at each denoising step.\\ Introduce in \cite{nichol2021glide}.
 
-    Once a diffusion model is trained, during the sampling
-    process (aka denoising Gaussian noise), we can attach
-    a cost function that "guides" the denoising process toward
-    some desired condition, such as colour or text embedding from a prompt that matches a text caption, gets by the image at each denoising step.\\ Introduce in \cite{nichol2021glide}.
+\textbf{TODO:} Mention and explain the Relevant work in the last part of this work \cite{Dhariwal2021DiffusionMB}.\\     
 
-    \textbf{TODO:} Mention and explain the Relevant work in the last part of this work \cite{Dhariwal2021DiffusionMB}.\\     
-
-    \textbf{TODO:} Create a diagram to explain the classifier guidance. It could be used for text prompt guidance using CLIP.\\ \ca{Lo importante es mencionar como usar el espacio de embedding conjunto de CLIP en los modelos text-to-image para guairlos...}.
+\textbf{TODO:} Create a diagram to explain the classifier guidance. It could be used for text prompt guidance using CLIP.\\ \ca{Lo importante es mencionar como usar el espacio de embedding conjunto de CLIP en los modelos text-to-image para guairlos...}.
 
 \begin{figure}[ht]
     \centering
@@ -279,7 +305,17 @@ By Bayes' theorem, log operations, and taking the gradient w.r.t. x we got:
     \label{fig:clip-overview}
   \end{figure}
 
-    
+  Download a pre-trained model to generate image captions such as OpenAI CLIP model
+  
+  \begin{enumerate}
+    \item Pass the noise tensor to the model to get an encoding vector
+    \item Use a loss function that compares the vector for the current sample state w.r.t. encoding for the text prompt; the last vector is always the same because the prompt doesn’t change during the process
+    \item Compute the sample gradient w.r.t loss value and update the sample values in the direction that minimizes the loss
+    \item Repeat the process during the whole stochastic Markovian process
+  \end{enumerate}
+
+Generally, any designed loss uses a scale factor (guidance scale $\gamma$) to increase/decrease the attribute effect. It allows you to move between novelty and fidelity. 
+
 \subsection{Classifier Free Guidance (CFG)}
 
     \textbf{TODO:} A good blog post that explains classifier guidance is \cite{dieleman2022guidance}. \\
@@ -289,44 +325,88 @@ By Bayes' theorem, log operations, and taking the gradient w.r.t. x we got:
 
 Despite the progress in conditioning the model, there are...\\
 
-A direct improvement to the DDPM was made in \cite{nichol2021improved}, in which they learn not only $\mu$ but also the variance $\sigma^{2}$ of the reverse process. This directly improves the likelihood estimation achieved by the model. \\
+\noindent A direct improvement to the DDPM was made in \cite{nichol2021improved}, in which they learn not only $\mu$ but also the variance $\sigma^{2}$ of the reverse process. This directly improves the likelihood estimation achieved by the model. \\
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[scale=0.75]{ch2-diffusion-models/ddpm-linear-cosine-scheduler.png}
+%     \captionsetup{width=\textwidth} % set the width of the caption
+%     \caption{\textbf{Linear vs. Cosine scheduler} introduce in \cite{nichol2021improved}. Destroying the input structure smoothly is beneficial (regard what?) over using a simple linear scheduler \ca{esta figura suma realmente?}.}
+%     \label{fig:ddpm-linear-vs-cosine-scheduler}
+%   \end{figure}
+\noindent Regarding the variance scheduler, the same work found that the linear scheduler implemented in the DDPM paper was suboptimal because destroying the image very early in the backward chain left a lot of intermediate states redundant. Instead, a cosine scheduler was proposed, which gradually destroys the image structure, providing further informative steps to the denoiser as it shown in Figure~\ref{fig:ddpm-linear-vs-cosine-scheduler}. \\
 
-\begin{figure}[ht]
-    \centering
-    \includegraphics[scale=0.75]{ch2-diffusion-models/ddpm-linear-cosine-scheduler.png}
-    \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Linear vs. Cosine scheduler} introduce in \cite{nichol2021improved}. Destroying the input structure smoothly is beneficial (regard what?) over using a simple linear scheduler \ca{esta figura suma realmente?}.}
-    \label{fig:ddpm-linear-vs-cosine-scheduler}
-  \end{figure}
+% Notably, the work of \cite{rombach2022highresolution} in improving the model architecture and the training process to scale the resolution.
 
-Regarding the variance scheduler, the same work found that the linear scheduler implemented in the DDPM paper was suboptimal because destroying the image very early in the backward chain left a lot of intermediate states redundant. Instead, a cosine scheduler was proposed, which gradually destroys the image structure, providing further informative steps to the denoiser as it shown in Figure~\ref{fig:ddpm-linear-vs-cosine-scheduler}. \\
+\subsection{Denoising Diffusion Implicit Models}\label{sec:DDIM}
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.87]{ch2-diffusion-models/DDIM-no-markovian.png}
+  \captionsetup{width=\textwidth} % set the width of the caption
+  \caption{\textbf{DDIM non-Markovian forward process.} \textbf{Left:} Ilustration of accelerated generation skipping the uneven intermediate steps, the denoiser network $\epsilon_{\theta}^{(t)}$ predicts the amount of noise added to $\mathrm{x}_{t}$ from step $t-2$, instead $t$. \textbf{Right:} the non-Markovian graphical model.}
+  \label{fig:ddim-non-markovian}
+\end{figure}
 
-Notably, the work of \cite{rombach2022highresolution} in improving the model architecture and the training process to scale the resolution.
+The authors demonstrate that the DDPM forward process can be reformulated as a family of non-Markovian generative processes. Their resulting variational training objectives share a common surrogate objective, precisely aligning with the one used to train DDPM. This approach allows for the use of non-Markovian diffusion processes during inference with the a pretrained DDPM model, leading to short generative Markov chains that can be sampled in just a few steps. Increasing the sample efficiency significantly but introducing a trade-off between sample quality.
 
-\subsection{Denoising Diffusion Implicit Models}
-
-The work of \cite{song2020denoising} introduces the Denoising Diffusion Implicit Models (DDIM) that are a score-based model that uses the denoising process to estimate the likelihood of the data. The main difference between DDIM and DDPM is that the former doesn't require a Markovian chain of states to estimate the likelihood. Instead, it uses the denoising process to estimate the likelihood of the data.\\
-
-\begin{equation}\label{eqn:ddim-likelihood}
-    x_{t-1} = 
-    \sqrt{\alpha_{t-1}}\underbrace{\bigg(\frac{x_{t}-\sqrt{1-\alpha_{t}}\epsilon_{\theta}^{(t)}(x_{t})}{\sqrt{\alpha_{t}}}\bigg)}_{\text{``predicted $x_{0}$''}} 
-    + \underbrace{\sqrt{1-\alpha_{t-1} - \sigma^2_{t}}~\cdot~\epsilon_{\theta}^{(t)}(x_{t})}_{\text{``direction pointing to $x_{t}$''}}
-    + \underbrace{\sigma_{t}\epsilon_{t}}_{\text{random noise}}
+\noindent Usando regla de Bayes y forzando XYZ se obtiene la siguiente expresión para el forward process que describe un proceso no-Markoviano, ilustrado en la Figura~\ref{fig:ddim-non-markovian}:
+\begin{equation}\label{eqn:ddim-non-markovian-marginal-eqn7}
+    q_{\sigma}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0}) = \mathcal{N}(\sqrt{\alpha_{t-1}} \mathrm{x}_0 + \sqrt{1 - \alpha_{t-1} - \sigma_{t}^{2}}\cdot\frac{\mathrm{x}_{t} - \sqrt{\alpha_{t}}\mathrm{x}_{0}}{\sqrt{1-\alpha_{t}}}, \sigma_{t}^{2}I)
 \end{equation}
 
-Esta subsección debe cumplir lo siguiente:
+\noindent The backward process is...\\
+
+\noindent \textbf{Prediction of noise-free observations.} We can obtain 
+a denoised observation $\tilde{\mathrm{x}}_{t\rightarrow 0}$ from any arbitrary
+intermediate state $\mathrm{x}_{t}$ by simple isolating $\mathrm{x}_{0}$ in Equation~\ref{eqn:reparameterization-trick} (Section~\ref{sec:reparameterization-trick})\footnote{In DDIM paper they use $\alpha_{t}=\alpha_{t} / \alpha_{t-1}$ to avoid using $\beta_{t}$, $\alpha_{t}$, and $\bar{\alpha}_{t}$ (See Appendix C.2 in \cite{song2020denoising})}. The caveat is that instead of sampling
+ $\epsilon\sim\mathcal{N}(0, I)$,  we use the noise prediction given by the pretrained denoiser network $\epsilon_{\theta}^{(t)}$ at level $t$.
+
+\begin{equation}\label{eqn:ddim-denoised-observation-eqn9}
+    f_{\theta}^{(t)}(\mathrm{x}_{t}) = \frac{\mathrm{x}_{t} - \sqrt{1-\alpha_{t}}\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})}{\sqrt{\alpha_{t}}} = \tilde{\mathrm{x}}_{t\rightarrow 0} 
+\end{equation}
+
+\noindent Then, by replacing Equation~\ref{eqn:ddim-denoised-observation-eqn9} in Equation~\ref{eqn:ddim-non-markovian-marginal-eqn7} we can compute $q_{\sigma}(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, f_{\theta}^{(t)}(\mathrm{x}_{t}))$ and sample $\mathrm{x}_{t-1}$ by:
+
+\begin{equation}\label{eqn:ddim-sample-prev-xt-eqn12}
+    \begin{split}
+    \mathrm{x}_{t-1} &= \sqrt{\alpha_{t-1}}\mathrm{x}_{0} + \sqrt{1-\alpha_{t-1}-\sigma_{t}^{2}}\cdot\frac{\mathrm{x}_{t} - \sqrt{\alpha_{t}}\mathrm{x}_{0}}{\sqrt{1-\alpha_{t}}} + \sigma_{t}\epsilon_{t} \\ 
+    \mathrm{x}_{t-1} &= \sqrt{\alpha_{t-1}}\bigg(\frac{\mathrm{x}_{t} - \sqrt{1 - \alpha_{t}}\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})}{\sqrt{\alpha_{t}}}\bigg) + \sqrt{1 - \alpha_{t-1} - \sigma_{t}^{2}} \\ &~~~~ \cdot\frac{\textcolor{red}{\cancel{\mathrm{x}_{t}}} - \textcolor{teal}{\cancel{\sqrt{\alpha_t}}}((\textcolor{red}{\cancel{\mathrm{x}_{t}}}-\textcolor{blue}{\cancel{\sqrt{1-\alpha_{t}}}}\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})) / \textcolor{teal}{\cancel{\sqrt{\alpha_{t}}}})}{\textcolor{blue}{\cancel{\sqrt{1-\alpha_{t}}}}} + \sigma_{t}\epsilon_{t} \\
+    \mathrm{x}_{t-1} &= 
+    \sqrt{\alpha_{t-1}}\underbrace{\bigg(\frac{\mathrm{x}_{t}-\sqrt{1-\alpha_{t}}\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})}{\sqrt{\alpha_{t}}}\bigg)}_{\text{``predicted $\mathrm{x}_{0}$''}} 
+    + \underbrace{\sqrt{1-\alpha_{t-1} - \sigma^2_{t}}~\cdot~\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})}_{\text{``direction pointing to $\mathrm{x}_{t}$''}}
+    + \underbrace{\sigma_{t}\epsilon_{t}}_{\text{random noise}}
+    \end{split}
+\end{equation}
+
+\noindent \textbf{Multiple generative processes} are contain in Equation~\ref{eqn:ddim-sample-prev-xt-eqn12} depending of $\sigma$ election. Again,
+the main takeaway is that all share the same surrogate objective with DDPM, so
+it possible to use the same denoiser model $\epsilon_{\theta}^{(t)}$ without any additional training for different inference processes. The stochasticity comes from $\epsilon_{t}\sim\mathcal{N}(0,, I)$, a Gaussian noise independent of $\mathrm{x}_{t-1}$, and modulate by the noise scheduler. \\
 
 \begin{enumerate}
-    \item Explicar los componentes de la ecuación de arriba.
-    \item Explicar conexión de la ecuación de arriba con el modelo original DDPM.
-    \item Explicar como termino sampleando en menos pasos.
-    \item Crear un diagrama donde a la izquierda aparezca una imagen input, al medio el ruido estimado inicial, a la derecha la transformación con
-manipulación. Basado en tutorial de Jonatthan Whitakker.
-    \item Explicar la utilidad de predecir $\mathrm{x}_{0}$ con el término
-    propuesto en DDIM para usarlo con clasificadores no entrenados en ruido, i.e. universal guidance.
+    \item The generative process, obtained by reversing Markovian forward process in DDPM, can be derived from Equation~\ref{eqn:ddim-sample-prev-xt-eqn12} by using $\sigma_{t} = \sqrt{(1-\alpha_{t-1}) / (1 - \alpha_{t})}\sqrt{1-\alpha_{t}/\alpha_{t-1}}$ for all $t$.
+    \item A deterministic forward process arise when $\sigma_{t}=0$, for all $t$, except for the initial noise. The authors names this specific generative process as denoising diffusion implicit models (DDIM).
 \end{enumerate}
 
- In Figure~\ref{fig:ddim-inversion-pascal}...\ca{explitar experimento de Pedro Pascal para invertir la imagen..., agregará valor hacer lo mismo con SD?}
+\noindent \textbf{Accelerate inference.} With the possiblity to design non-Markovian forward process using the same pretrained model of DDPM, the authors propose to accelerate the inference process by skipping intermediate steps. Subset of latent variables $\{\mathrm{x}_{\tau_1}, \dots, \mathrm{x}_{\tau_{s}} \}$ where $\tau$ is an increasing subset sequence of $[1, \dots, T]$ , of length $S$. We define a forward process over the subset such that $q(\mathrm{x}_{\tau_i}\mid\mathrm{x}_{0})=\mathcal{N}(\sqrt{\alpha_{\tau_{i}}}\mathrm{x}_{0}, (1-\alpha_{\tau_{i}})I)$ matches the marginals, see left part of the Figure~\ref{fig:ddim-non-markovian}. Therefore, we can accelerate the inference increasing the number of steps between the sequence subset, and introducing a trade-off between sample quality and computational cost in doing so. \\
+
+\noindent Introducing the hyperparameter $\eta\in\mathbb{R}^{+}$ for control the
+sampling stochasticity from DDIM ($\eta=0$) to DDPM ($\eta=1$) in Equation~\ref{eqn:ddim-sample-prev-xt-eqn12}, and use subsequence $\tau$ of different length 
+for control the sample aceeleration.
+\begin{equation}\label{eqn:ddim-to-ddpm-variance}
+    \sigma_{\tau_{i}}(\eta) = \eta \sqrt{(1-\alpha_{\tau_{i-1}}) / (1-\alpha_{\tau_{i}})}\sqrt{1-\alpha_{\tau_{i}}/\alpha_{\tau_{i-1}}}
+\end{equation}
+It is possible to produce samples with a similar quality of DDPM $1000$ steps using $20-100$ DDIM steps by measuring the quality with the Fréchet inception distance (FID). This means a speed ups of $10\times$ to $100\times$ over DDPM generation process \cite{song2020denoising}. In practice, DDIM is commonly used as a sampler and an efficient way to accelerate the sampling process, as utilized in this thesis. \\
+
+\noindent \textbf{Sample consistency with DDIM.} \ca{Acá hablar dela propiedaded de consistencia y explorar el espacio latente interviniendolo} As a consequence of the deterministic forward process, we have \textit{\textbf{sample consistency}}. Given any arbitrary length $\tau$, the image generated from the initial sample step $\mathrm{x}_{T}$ are fairly similar, in authors words ``it would appear that $\mathrm{x}_{T}$ alone would be an informative latent encoding of the image''.  Hence, they suggest that high level features of the images $\mathrm{x}_{0}$ are determined by the initial sample step $\mathrm{x}_{T}$. \\
+
+\noindent The sample consistency property can be useful for inverse problems such as XYZ. For instance, in Figure~\ref{fig:ddim-inversion-pascal}, given an input image (Pedro Pascal face) we can estimate the initial noise $\tilde{\mathrm{x}}_{t}$, and run the generative process to recover the input. However, the input is not perfectly recover, the reason could be:
+
+\begin{itemize}
+    \item Interesting is that high level features are encoded by $\mathrm{x}_{T}$ and doesn't vary as long as increase the number of steps to generate the final sample. However, the quality is better as long as the the length of the trajectory increase. Therefore, a trick to obtain a recovered input with higher fidelity is to skip the first steps and starter the denoising process from then, avoiding higher feature modification.
+    \item The estimation error is illustrate as a trade-off between denoising from the first step that conserve face semantic but change higher features and skipping a set of denoiser steps conserving semantic but with lower quality.
+    \item External input not generated by the model are not guarantee to be recover given the generative capacities of $\epsilon_{\theta}$. In the illustration, the input is external but is the generative process is perform by a DDPM trained model on a dataset of celebrities faces.
+\end{itemize}
+
+\noindent Interesting is that high level features are encoded by $\mathrm{x}_{T}$ and doesn't vary as long as increase the number of steps to generate the final sample. However, the quality is better as long as the the length of the trajectory increase. \\
 
 \begin{figure}[ht]
     \centering
@@ -336,37 +416,19 @@ manipulación. Basado en tutorial de Jonatthan Whitakker.
     \label{fig:ddim-inversion-pascal}
   \end{figure}
 
-\subsection{Latent Diffusion Models}
-
-XYZ
-
-\section{Neural Net Architecture}
-
-Theoretically, the model with learnable parameters used in the backward process could be anything. However, highly-dimensional data such as images, requires flexible functions that neural networks can handle properly, but not with carefully choose the proper architecture as most Deep Learning implementations. We will briefly discuss the most typical components used within the framework of diffusion models...\\
-
-\begin{itemize}
-    \item U-Net
-    \item ResNet blocks
-    \item Skip connections
-    \item Attention blocks
-    \item Adaptive group normalization (*)
-    \item BigGAN residual block
-\end{itemize}
-
-
 \section{Summary}
 
 In summary, a typical diffusion model framework can be implemented as follows:\\
 
-A \textbf{forward process} that consists of a Markovian chain of states $\{\mathrm{x}\}_{0:T}$ that takes the original image $\mathrm{x}_0$ and iteratively adds noise until getting isotropic Gaussian noise $\mathrm{x}_{T}$. \\
+\noindent A \textbf{forward process} that consists of a Markovian chain of states $\{\mathrm{x}\}_{0:T}$ that takes the original image $\mathrm{x}_0$ and iteratively adds noise until getting isotropic Gaussian noise $\mathrm{x}_{T}$. \\
 
-In the reverse, or \textbf{backward process}, a model learns how to gradually remove the noise to recover the data structure. Most implementations model this denoising endeavour using some U-net neural network architecture with attention modules. \\
+\noindent In the reverse, or \textbf{backward process}, a model learns how to gradually remove the noise to recover the data structure. Most implementations model this denoising endeavour using some U-net neural network architecture with attention modules. \\
 
-The sequence of intermediate states provides a detailed roadmap when destroying the observation such as images and leaves a trail to the denoiser network to recover the input structure. Therefore, the forward process acts in a \textbf{self-supervised} manner generating the labels for the data itself. \\
+\noindent The sequence of intermediate states provides a detailed roadmap when destroying the observation such as images and leaves a trail to the denoiser network to recover the input structure. Therefore, the forward process acts in a \textbf{self-supervised} manner generating the labels for the data itself. \\
 
-It is possible to use a model to predict the noisy image directly, or indirectly via predicting the noise, and then substracting from the state. Nevertheless, \textbf{the core idea of the training objective is to reduce the error between the noise prediction and the true noise} used to destroy the sample at a given step. \\
+\noindent It is possible to use a model to predict the noisy image directly, or indirectly via predicting the noise, and then substracting from the state. Nevertheless, \textbf{the core idea of the training objective is to reduce the error between the noise prediction and the true noise} used to destroy the sample at a given step. \\
 
-The noise used to destroy the structure in data is carefully handled by a deterministic function called \textbf{noise scheduler}. It determines the variance schedule, $\beta_{1}, \dots, \beta_{T}$, or the specific amount of noise injected in each timestamp $t$ during the Markovian chain. \\
+\noindent The noise used to destroy the structure in data is carefully handled by a deterministic function called \textbf{noise scheduler}. It determines the variance schedule, $\beta_{1}, \dots, \beta_{T}$, or the specific amount of noise injected in each timestamp $t$ during the Markovian chain. \\
 
-Finally, we have a model that can \textbf{generate novel samples} from the data distribution \textbf{by sampling from a standard normal distribution and then 
+\noindent Finally, we have a model that can \textbf{generate novel samples} from the data distribution \textbf{by sampling from a standard normal distribution and then 
 successively remove noise}.

@@ -2,19 +2,11 @@
 
 \section{Overview}
 
-\begin{chapquote}{Lewis Carroll, \textit{Alice in Wonderland}}
-``Begin at the beginning,'' the King said, gravely, ``and go on till you come to an end; then stop.''
+\begin{chapquote}{Morpheus, \textit{The Matrix}}
+``You take the red pill, you stay in Wonderland, and I show you how deep the rabbit hole goes. Remember, all I'm offering is the truth. Nothing more.''
 \end{chapquote}
 
 \insertimage[\label{fig:anatomy-rl-algo}]{ch3-rl/anatomy-rl-algorithms.png}{scale=0.85}{Adapted from the Sergey Levine Course on Deep Reinforcement Learning}
-
-\ca{Cambiar toda la sección de overview...}.
-
-The \textbf{good}: Formular la cadena de difusión como un \textit{Markov Decision Process} (MDP) permite utilizar toda la bateria de Reinforcement Learning; Esto en terminos de modelos de Difusión pre-entrenados es la posibilidad de adoptar sus capacidades a una nueva tarea, concepto, o función como se demuestre en \cite{black2023training}. Incluso, es posible realizar alignment de \textit{text-to-image} models usando \textit{feedback} humano \cite{ouyang2022training}. \\
-
-The \textbf{bad}: La Figura~\ref{fig:anatomy-rl-algo} ilustra la anatomía de cualquier algoritmo de reinforcement learning (e.g. REINFORCE, DQN) para aprender un \textit{policy} a traves de interactuar con su ambiente (real o simulado). \\
-
-%The \textbf{thesis:} ¿Qué tecnicas se pueden utilizar para disminuir el costo de simular la interacción? ¿Es posible utilizar alguna técnica de neural compression (e.g. AE, VAE, VQ-VAE/VQ-GAN) como se usa en LDM \cite{rombach2022highresolution} o \cite{pernias2023wuerstchen} para entrenar el modelo, pero a nivel de fine-tuning. Un reward asigna un score a cada trayectoria (simulación), es consumidor de trayectorias, se puede utiliar un meta reward para ir destilando trayectorias más cortas a medida que el algoritmo aumenta? \\
 
 \ca{Probablemente acá sera interesante poner ese diagrama de Venn con la interessción de modelos de difusión y RL...(?)}
 
@@ -32,20 +24,20 @@ A vital research line is to use pre-trained diffusion models and adapt to novel 
 \ca{Volver a revisar cuando termine el último capítulo y ver si se acomodan
 las contribucionoes a todo lo que finalmente se hizo...}
 
-In this thesis we will explore the use of Reinforcement Learning techniques to adapt pre-trained diffusion models to new tasks. Specifically, the use of policy optimization over agents built-on-top of the denoising network---within
-the diffusion model framework---and guide the sampling process to maximize a reward signal. The main contributions of this work are:
+This thesis explores using Reinforcement Learning (RL) techniques to adapt pre-trained diffusion models to new tasks. Specifically, it involves policy optimization over agents built on top of the denoising network within the diffusion model framework to guide the sampling process and maximize a reward signal. The main contributions are: \\
 
 \begin{enumerate}
-    \item The neccessary background to understand the intersection between diffusion models and reinforcement learning that is an essential guide to contribute to the field.
-    \item A reproduction of the work \textit{Training diffusion models with reinforcement learning} \cite{black2023training} that introduces policy optimization algorithms to adapt pre-trained diffusion models to new tasks.
-    \item Empirical analysis of reward signals during the sample trajectories of the diffusion process.
-    \item Incorporating baseline and the intermediate steps reward to training the policy, extending and comparing the results to the original work \citep{black2023training}.
+    \item Providing the necessary background to understand the intersection of diffusion models and reinforcement learning, serving as an essential guide for contributing to the field.
+    \item Reproducing the work \textit{``Training Diffusion Models with Reinforcement Learning''} (Black, 2023 \cite{black2023training}), which introduces policy optimization algorithms (DDPO) to adapt pre-trained diffusion models to new tasks.
+    \item Conducting empirical analysis of reward signals during the sample trajectories of the diffusion process.
+    \item Incorporating baseline and intermediate steps rewards in training the policy, extending and comparing results to DDPO.
+    \item \ca{Agregar algo de RLHF y alignment...}
 \end{enumerate}
 
-We first need to understand the basics of diffusion models, \textbf{Chapter 2} provide a background of this kind of generative models, how can formulate the model as a Markov chain, the training objective, how can we condition information or guide the model sample generation, and discuss improvements over the vanilla formulation as well as some of recent advances in the field. 
+\noindent To lay the groundwork, \textbf{Chapter 2} covers the basics of diffusion models, including their formulation as a Markov chain, the training objective, conditioning information or guiding model sample generation, and improvements such as speeding up sample generation. \\
 
-The next step is a quick journey through the Reinforcement Learning (RL) field in \textbf{Chapter 3}, we focus on a broad overview of the Markov Decision Processes (MDP), and then going deep in understanding Policy Optimization algorithms to solve the MDP. The goal is to understand how to train an agent capable of taking actions in response to its environment. 
+\noindent Next, a broad overview of the Reinforcement Learning field is provided in \textbf{Chapter 3}, focusing on Markov Decision Processes (MDP) and Policy Optimization algorithms. The goal is to understand how to train an agent to take actions in response to its environment. \\
 
-We want to build an agent on top of a pretrained diffusion model that can teach the model to generate samples that satisfy the objective of our agent driven by a reward. In \textbf{Chapter 4}, equipped with the necessary background, we will explore the intersection between diffusion models and reinforcement learning. At the end, we will reproduce the work in \cite{black2023training} that introduces such conecction between the two fields using a smaller model, and then we will discuss the challenges and opportunities of this approach. 
+\noindent Equipped with the necessary background, the intersection of diffusion models and reinforcement learning is explored in \textbf{Chapter 4}. This includes reproducing the Denoising Diffusion Policy Optimization (DDPO) \cite{black2023training} using a smaller unconditional generative model and discussing the challenges and opportunities of this approach \ca{agregar improvements si alcanzo...}. \\
 
-Finally, in \textbf{Chapter 5} we will present the conclusion of this work and some future directions.
+\noindent Finally, \textbf{Chapter 5} presents the conclusions of this work and future directions. \\

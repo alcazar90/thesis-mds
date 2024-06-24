@@ -8,12 +8,12 @@
 	
 	\section{Additional DDPO samples}\label{appendix:additional-samples}
 
-    \textbf{Additional samples.} A hundred additional comparable samples from the pretrained and DDPO finetuned models are provided.
+    % \textbf{Additional samples.} A hundred additional comparable samples from the pretrained and DDPO finetuned models are provided.
 
         % 100 samples from the pretrained model
         \begin{figure}[ht]
             \centering
-            \includegraphics[scale=0.75]{img/results/ddpm-samples.png}
+            \includegraphics[scale=0.8]{img/results/ddpm-samples.png}
             \vspace{-4pt}  % reduce space between caption and figure
             \captionsetup{width=\textwidth} % set the width of the caption
             \caption{Celeba-HQ 256x256 generated samples from the pretrained model google/ddpm-celebahq-256.}
@@ -23,7 +23,7 @@
         % 100 samples from the finetuned model with ddpo and compressibility
         \begin{figure}
             \centering
-            \includegraphics[scale=0.75]{img/results/ddpo-compressibility-samples.png}
+            \includegraphics[scale=0.8]{img/results/ddpo-compressibility-samples.png}
             \vspace{-4pt}  % reduce space between caption and figure
             \captionsetup{width=\textwidth} % set the width of the caption
             \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by JPEG compressibility.}
@@ -33,7 +33,7 @@
         % 100 samples from the finetuned model with ddpo and incompressibility
         \begin{figure}
             \centering
-            \includegraphics[scale=0.75]{img/results/ddpo-incompressibility-samples.png}
+            \includegraphics[scale=0.8]{img/results/ddpo-incompressibility-samples.png}
             \vspace{-4pt}  % reduce space between caption and figure
             \captionsetup{width=\textwidth} % set the width of the caption
             \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by JPEG incompressibility.}
@@ -43,7 +43,7 @@
         % 100 samples from the finetuned model with ddpo and aesthetic quality
         \begin{figure}
             \centering
-            \includegraphics[scale=0.75]{img/results/ddpo-aesthetic-samples.png}
+            \includegraphics[scale=0.8]{img/results/ddpo-aesthetic-samples.png}
             \vspace{-4pt}  % reduce space between caption and figure
             \captionsetup{width=\textwidth} % set the width of the caption
             \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by aesthetic quality.}
@@ -52,9 +52,107 @@
 
     \newpage
 
-    \section{Implementation details}
+    \section{Additional transitions from DDPM to DDPO}
 
-    Lalal
+    \ca{Cambiar captions de las figuras de transición..., buscar una descripción más adecuada y también mejorar el caption de los ejemplos que aparecen en el capítulo de resultados.}
+
+        % transition using jpeg compressibility extra sample 1
+        \begin{figure}
+            \centering
+            \includegraphics[scale=1.40]{img/results/compressibility_40.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by JPEG compressibility.}
+            \label{fig:ddpm-to-ddpo-compressibility-extra1}
+        \end{figure}
+
+        % transition using jpeg compressibility extra sample 2
+        \begin{figure}
+            \centering
+            \includegraphics[scale=1.40]{img/results/compressibility_44.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by JPEG compressibility.}
+            \label{fig:ddpm-to-ddpo-compressibility-extra2}
+        \end{figure}
+
+        % transition using jpeg incompressibility extra sample 1
+        \begin{figure}
+            \centering
+            \includegraphics[scale=1.40]{img/results/incompressibility_8.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by JPEG incompressibility.}
+            \label{fig:ddpm-to-ddpo-incompressibility-extra1}
+        \end{figure}
+
+
+        % transition using jpeg incompressibility extra sample 2
+        \begin{figure}
+            \centering
+            \includegraphics[scale=1.40]{img/results/incompressibility_28.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by JPEG incompressibility.}
+            \label{fig:ddpm-to-ddpo-incompressibility-extra2}
+        \end{figure}
+
+        % transition using aesthetic quality extra sample 1
+        \begin{figure}
+            \centering
+            \includegraphics[scale=1.40]{img/results/laion_1.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by aesthetic quality.}
+            \label{fig:ddpm-to-ddpo-aesthetic-extra1}
+        \end{figure}
+
+
+        % transition using aesthetic quality extra sample 2
+        \begin{figure}
+            \centering
+            \includegraphics[scale=1.40]{img/results/laion_12.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Celeba-HQ 256x256 generated samples from the DDPO finetuned model optimized by aesthetic quality.}
+            \label{fig:ddpm-to-ddpo-aesthetic-extra2}
+        \end{figure}
+
+        % transition from DDPM to DDPO samples optimized for Task.OVER50 (ViT age classifier) extra sample 1
+        \begin{figure}
+            \centering
+            \includegraphics[scale=2.80]{img/results/over50_7.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Transition from DDPM to DDPO optimized for over50.}
+            \label{fig:ddpm-to-ddpo-over50-extra1}
+        \end{figure}
+
+        % transition from DDPM to DDPO samples optimized for Task.OVER50 (ViT age classifier) extra sample 2
+        \begin{figure}
+            \centering
+            \includegraphics[scale=2.80]{img/results/over50_46.png}
+            \vspace{-0pt}  % reduce space between caption and figure
+            \captionsetup{width=\textwidth} % set the width of the caption
+            \caption{Transition from DDPM to DDPO optimized for over50.}
+            \label{fig:ddpm-to-ddpo-over50-extra2}
+        \end{figure}
+
+
+    \newpage
+
+    \section{Implementation details}\label{appendix:implementation}
+
+    The DDPO finetuned checkpoints are available in the following Hugging Face
+    model repositories: \ca{Create a table with the model and the respective
+    W\&B run (make public the project)}
+    \begin{enumerate}
+        \item \href{https://huggingface.co/alkzar90/ddpo-compressibility-celebahq-256}{alkzar90/ddpo-compressibility-celebahq-256}
+        \item \href{https://huggingface.co/alkzar90/ddpo-incompressibility-celebahq-256}{alkzar90/ddpo-incompressibility-celebahq-256}
+        \item \href{https://huggingface.co/alkzar90/ddpo-aesthetic-celebahq-256}{alkzar90/ddpo-aesthetic-celebahq-256}
+    \end{enumerate}
+
+    Mention the use of the Hugging Face diffuser library...
 
     \subsection{Hyperparameters}
 
