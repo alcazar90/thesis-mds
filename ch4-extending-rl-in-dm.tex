@@ -1,18 +1,9 @@
 \chapter{Extending Reinforcement Learning in Diffusion Models}
 
-\section{Introduction}
 
-\ca{La intención de este capítulo es que sea autocontenido y no dependa de los capítulos anteriores. Sin embargo, dentro del contexto de la tesis, igual
-es como redundante la introducción a este nivel. Considerando que hay un
-capítulo introductorio que debiera ser leído antes de este y contener el
-objetivo de esta tesis. \textbf{Entonces}, agregar un disclaimer sobre que la introducción esta repetida y que se puede omitir su lectura, o derechamente
-remover la introducción de este capítulo.}
+\ca{Probablemente acá sera interesante poner ese diagrama de Venn con la intersección de modelos de difusión y RL...(?)}
 
-Reinforcement learning has shown the capacity to orchestrate or align highly complex generative models, which often proves impossible using a supervised learning objective such as matching distribution \ca{referencia ChatGPT?}. \ca{(suavizar esta transición)} Constructing agents based on generative models can be seen as a user-model interface endeavor, an intriguing line of exploration from the perspective of human-computer interaction (HCI) \ca{Agregar referencia.}. While reinforcement learning is not a cheap or intuitive approach, it offers flexibility and simplicity by optimizing a reward. Regarding the cost of sampling, highly capable generative models such as LLMs and diffusion models have fostered research efforts to reduce inference times for sample generation (inference as a first citizen). These advances make it more appealing to construct agents atop these models. \\
-
-\noindent In this work, we propose several extensions to the formulation of the diffusion process as a sequential decision-making process, specifically regarding how to exploit the information from the intermediate state rewards rather than only using the final trajectory outcome. Based on the \textit{insights} of the reward signal behavior in sample generation, we propose methods based on the challenge classifier guidance techniques from the diffusion model literature. Moreover, we explore the use of baseline functions, a technique known to reduce the variance of the gradient estimator when using Monte Carlo estimation \cite{mohamed2020monte}, without introducing bias into the estimator. We compare the implementation of these extensions to the DDPO algorithm \cite{black2023training} on which our formulation is based, on the same \textit{downstream tasks} used in this work, such as JPEG compressibility and incompressibility, and aesthetic quality. \\
-
-\noindent Our contributions extend the existing framework of the diffusion process by exploiting the informative intermediate state rewards rather than solely relying on the final trajectory outcome. We analyze the reward signal dynamics throughout the denoising process using a collection of sample trajectories from the \textit{google/ddpm-celebahq-256} model. Additionally, we propose extended reward functions that incorporate further information beyond the final sample, alongside the introduction of baseline functions during RL training. Model checkpoints are provided for each of the proposed methods, allowing for further exploration and comparison (see Appendix~\ref{appendix:implementation}). \\
+Our contributions extend the existing framework of the diffusion process by exploiting the informative intermediate state rewards rather than solely relying on the final trajectory outcome. We analyze the reward signal dynamics throughout the denoising process using a collection of sample trajectories from the \textit{google/ddpm-celebahq-256} model. Additionally, we propose extended reward functions that incorporate further information beyond the final sample, alongside the introduction of baseline functions during RL training. Model checkpoints are provided for each of the proposed methods, allowing for further exploration and comparison (see Appendix~\ref{appendix:implementation}). \\
 
 %Code: \href{https://github.com/alcazar90/ddpo-celebahq}{https://github.com/alcazar90/ddpo-celebahq}
 
@@ -25,16 +16,6 @@ Reinforcement learning has shown the capacity to orchestrate or align highly com
     \caption{\textbf{DDPM pretrained model's samples vs DDPO finetuned samples.} Qualitative depiction of the effects of RL finetuning on different reward functions. Additional samples in the Appendix~\ref{appendix:additional-samples}.}
     \label{fig:visual-comparison-ddpo}
 \end{figure}
-
-\section{Related Work}
-
-\noindent\textbf{Diffusion Models.} Muy breve y referenciar capítulo de background.\\
-
-\noindent\textbf{Reinforcement Learning.} Muy breve y referenciar capítulo de background.\\
-
-\noindent\textbf{Reinforcement Learning from Human Feedback (RLHF).} Recently the attention to use human feedback in reinforcement learning has increased \cite{kaufmann2023survey}. The core idea is to capture the human feedback into a reward model that can be used to train the policy that dictates the agent's behaviour. The benefits it's to allow different types of feedback, such as binary, continuous, or even more complex signals that can be used to train in a supervised learning fashion. Then, instead of design the reward function---or use feature engineering---we can gives the agent access to the reward model to obtain the neccessary information to label trajectories and optimize its behaviour to learn the task. \\
-
-\noindent\textbf{Reinforcement learning \& Diffusion models.} Citar trabajos de Schulman \citep{schulman2015trust} y \citep{schulman2017proximal}. The former work extend a theoretical lower bound that works for policy update, original present for the case of mixture policies (something between $\pi_{old}$ and $\pi`$), and now adapted to stochastic policies. They introduce a distance measure between policies: total variation divergence. In the following section, we will detailed more the policy optimization approach for finetuned diffusiono models with RL.\\
 
 \section{Diffusion Model as Sequential Decision making Process}\label{sec:diffusion-model-mdp}
 
@@ -293,7 +274,7 @@ is depicted in the original sample}---while DDPO induce modification at high lev
   \end{minipage}\hfill
   \begin{minipage}{0.5\textwidth}
       \centering
-      % \includegraphics[width=1\textwidth]{img/results/reward_hist-jpeg-compressibility.png} % second figure itself
+      \includegraphics[width=1\textwidth]{img/results/reward_hist-over50.png} % second figure itself
       %\label{fig:sample_figure_2}
   \end{minipage}\vspace{-0.1cm} % space between row 1 and row 2 of figures
   \begin{minipage}{0.5\textwidth}
@@ -314,7 +295,7 @@ is depicted in the original sample}---while DDPO induce modification at high lev
 
 \noindent \textbf{For JPEG compressibility and incompressibility tasks}, optimization can be achieved using a fixed learning rate ($1e-5$), resulting in smooth transitions in the image as the model parameters shift from the initial  pretrained DDPM model to the final DDPO finetuned model. This process is  illustrated in Figure~\ref{fig:ddpm-to-ddpo-compressibility} and Figure~\ref{fig:ddpm-to-ddpo-incompressibility} for each respective reward. \\
 
-\noindent \textbf{In the case of aesthetic quality task}, the transition is more challenging, requiring a more complex learning rate dynamics to starting to maximize the aesthetic score \ca{\textbf{Agregar un gráfico de learning rate y rewards con los runs utilizados para aesthetic quality}}. The consequences of this are abrupt changes in the image's semantic at the beginning of the training, given the learning rate warmp-up that allow  to ``escape'' from the local minima of the pretrained model. Then, a half-cosine annealing allow to smooth the transition to the final model. This process is illustrate Figure~\ref{fig:ddpm-to-ddpo-aesthetic}. \\
+\noindent \textbf{In the case of aesthetic quality task}, the transition is more challenging, requiring a more complex learning rate dynamics to starting to maximize the aesthetic score \ca{\textbf{Agregar un gráfico de learning rate y rewards con los runs utilizados para aesthetic quality}}. The consequences of this are abrupt changes in the image's semantic at the beginning of the training, given the linear learning rate warmp-up that allow  to ``escape'' from the local minima of the pretrained model but without semantic degration of using a fix high learning rate. Then, a half-cosine annealing allow to smooth the transition to the final model. This process is illustrate Figure~\ref{fig:ddpm-to-ddpo-aesthetic}. \\
 
 
 % Transition from DDPM to DDPO samples optimized for JPEG compressibility
@@ -323,7 +304,7 @@ is depicted in the original sample}---while DDPO induce modification at high lev
   \includegraphics[scale=1.40]{img/results/compressibility_6.png}
   \vspace{-0pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Transition from DDPM to DDPO optimized for JPEG compressibility.}}
+    \caption{\textbf{Example of JPEG compressibility transformation during model updates}, starting from a pretrained DDPM model and optimized to maximize the reduction in image filesize after JPEG compression using DDPO.}
     \label{fig:ddpm-to-ddpo-compressibility}
 \end{figure}
 
@@ -333,7 +314,7 @@ is depicted in the original sample}---while DDPO induce modification at high lev
   \includegraphics[scale=1.40]{img/results/incompressibility_26.png}
   \vspace{-0pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Transition from DDPM to DDPO optimized for JPEG incompressibility.}}
+    \caption{\textbf{Example of JPEG incompressibility transformation during model updates}, starting from a pretrained DDPM model and optimized to increase the image filesize after JPEG compression using DDPO.}
     \label{fig:ddpm-to-ddpo-incompressibility}
 \end{figure}
 
@@ -349,7 +330,7 @@ same coind. This is reflected in the reward curves during training (Figure~\ref{
   \includegraphics[scale=1.40]{img/results/laion_60.png}
   \vspace{-0pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Transition from DDPM to DDPO optimized for aesthetic quality.}}
+    \caption{\textbf{Example of aesthetic quality transformation during model updates}, starting from a pretrained DDPM model and optimized to maximize the LAION aesthetic score using DDPO.}
     \label{fig:ddpm-to-ddpo-aesthetic}
 \end{figure}
 
@@ -382,7 +363,7 @@ same coind. This is reflected in the reward curves during training (Figure~\ref{
   \includegraphics[scale=2.80]{img/results/over50_47.png}
   \vspace{-0pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Transition from DDPM to DDPO optimized for over50.}}
+    \caption{\textbf{OVER50 transformation during model updates}, starting from a pretrained DDPM model and optimized to maximize the sum of logits for classes $\geq 50$ years old of the ViT Age classifier using DDPO.}
     \label{fig:ddpm-to-ddpo-over50}
 \end{figure}
 

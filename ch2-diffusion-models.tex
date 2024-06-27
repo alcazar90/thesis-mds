@@ -164,11 +164,10 @@ introducing $q(\mathrm{x}_{1:T}\mid\mathrm{x}_{0})/q(\mathrm{x}_{1:T}\mid\mathrm
 \noindent The key points from the above derivation are as follows: 
 \begin{enumerate}
     \item Isolating  $\log q(\mathrm{x}_{t}\mid\mathrm{x}_{0})$ with $\log p(\mathrm{x}_{T})$ because both are invariant by the learning process.
-    \item Reversing $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})$ by $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})$ (bayes theorem) without affecting the Markov property \ca{revisar vericidad de esto...}.
+    \item Reversing $q(\mathrm{x}_{t}\mid\mathrm{x}_{t-1})$ by $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0})$ (bayes theorem) in step \ca{completar...}. 
     \item The first two terms at the end of Equation~\ref{eqn:ELBO2} appear due to the definition of the Kullback-Leibler divergence. 
 \end{enumerate}
     
-
 \noindent In summary, the variational lower bound loss is a sum of terms that result from the reverse diffusion process $L_{\text{\scriptsize{\text{VLB}}}}=L_{T} + L_{T-1} + \dots + L_{0}$. The final term $L_{T}$ can be discarded because
 it is constant, given that $q$ has not learnable parameters and $\mathrm{x}_{T}$ follows a standard normal distribution. The remaining terms are the denoising matching terms, which are crucial in the loss function because their number depends on the length of diffusion chain $T$ (e.g. $T=1000$ in DDPM).\\
 
@@ -182,34 +181,42 @@ it is constant, given that $q$ has not learnable parameters and $\mathrm{x}_{T}$
   \label{fig:ddpm-denoising-term}
 \end{figure}
 
-The model's goal is t minimize the discrepancy, measured by the Kullback-Leibler divergence, between the posterior of the encoder---\textit{which tells us how to remove the real noise}---and the decoder, which predicts how to ``reverse'' the processes and has learnable parameters $\theta$. Therefore, the loss consists of a sum of denoising matching terms across the diffusion sequence, as shown in Figure~\ref{fig:ddpm-denoising-term}. \\
+The model's goal is to minimize the discrepancy, measured by the Kullback-Leibler divergence, between the posterior of the encoder---\textit{which tells us how to remove the real noise}---and the decoder, which predicts how to ``reverse'' the processes and has learnable parameters $\theta$. Therefore, the loss consists of a sum of denoising matching terms across the diffusion sequence, as shown in Figure~\ref{fig:ddpm-denoising-term}. \\
 
-\noindent However, reversing the diffusion process $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})$ is intractable because it requires the entire dataset to compute it. We can make it tractable by conditioning on $\mathrm{x}_{0}$, leading to the following expression (See \citep{weng2021diffusion} for a detailed derivation):
+\noindent However, reversing the diffusion process $q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t})$ is intractable because it requires the entire dataset to compute it. We can make it tractable by conditioning on $\mathrm{x}_{0}$, leading to the following expression\footnote{(See \citep{weng2021diffusion} for a detailed derivation)}:
 
 \begin{align}\label{eqn:reverse-forward-process}
-    q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0}) &= \mathcal{N}(\mathrm{x}_{t-1};~\tilde{\mu}_{t}(\mathrm{x}_{t}, \mathrm{x}_{0}), \tilde{\beta}_{t}I) \\
-    \tilde{\mu}_{t}(\mathrm{x}_{t}, \mathrm{x}_{0}) &:= \frac{\sqrt{\bar{\alpha}_{t-1}}\beta_{t}}{1-\bar{\alpha}_{t}}\mathrm{x}_{0} + \frac{\sqrt{\alpha_{t}}(1 - \bar{\alpha}_{t-1})}{1-\bar{\alpha}_{t}}\mathrm{x}_{t} \\
-    \tilde{\beta}_{t} &:= \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_{t}}\beta_{t}
+    q(\mathrm{x}_{t-1}\mid\mathrm{x}_{t}, \mathrm{x}_{0}) &= \mathcal{N}(\mathrm{x}_{t-1};~\tilde{\mu}_{t}(\mathrm{x}_{t}), \tilde{\beta}_{t}I) \\
+    \tilde{\mu_{t}}(\mathrm{x}_{t}) &= \frac{1}{\sqrt{\alpha_{t}}}\big(\mathrm{x}_{t} - \frac{1 - \alpha_{t}}{\sqrt{1 - \bar{\alpha}}_{t}}\epsilon_{t}\big) \\
+    \tilde{\beta}_{t} &= \frac{1-\bar{\alpha}_{t-1}}{1-\bar{\alpha}_{t}}\beta_{t}
 \end{align}
 
-\noindent \ca{Conectar con la intro de la sección optimization} Another important aspect is the parameterization of $p_{\theta}$ we can predict directly the latent state $\mathrm{x}_{t-1}$, or indirectly by predicting the noise perturbation $\epsilon_{\theta}$, and then apply the reparameterization trick to get the latent state, given that $\mathrm{x}_{t}$ is known. Moreover,
-in (Ho et al., 2020) \cite{ho2020denoising} they use only the mean as a learnable parameter and the variance is set as $\Sigma_{\theta}(\mathrm{x}_{t}, t)=\sigma_{t}^2I$, a time dependent constant such as $\sigma_{t}^{2}=\beta_{t}$ or $\sigma_{t}^{2}=\tilde{\beta}_{t}$.
+\noindent The parameterization in the backward process will be to match
+$\tilde{\mu}_{t}$, 
+
 \begin{align}\label{eqn:backward-noise-reparameterization}
-    \mu_{\theta}(\mathrm{x}_{t}, t) &= \frac{1}{\sqrt{\alpha_{t}}}\big(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}(\mathrm{x}_{t}, t)\big) \\
+    \mu_{\theta}(\mathrm{x}_{t}, t) &= \frac{1}{\sqrt{\alpha_{t}}}\big(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}^{(t)}(\mathrm{x}_{t})\big) \\
     \mathrm{x}_{t-1} &= \mathcal{N}\big(\mathrm{x}_{t-1}; \frac{1}{\sqrt{\alpha_{t}}}\big(\mathrm{x}_{t} - \frac{1-\alpha_{t}}{\sqrt{1-\bar{\alpha}_{t}}}\epsilon_{\theta}(\mathrm{x}_{t}, t)\big), \Sigma_{\theta}(\mathrm{x}_{t}, t)\big)
 \end{align}
 
-Backward parametrerization Ho. et al just use the mean as a learnable parameter, and the variance is fixed and time-depends on the noise scheduler, 
-$\Sigma_{\theta}(\mathrm{x}_{t}, t) = \sigma_{t}^{2}I$:
+% \noindent \ca{Conectar con la intro de la sección optimization} Another important aspect is the parameterization of $p_{\theta}$ we can predict directly the latent state $\mathrm{x}_{t-1}$, or indirectly by predicting the noise perturbation $\epsilon_{\theta}$, and then apply the reparameterization trick to get the latent state, given that $\mathrm{x}_{t}$ is known. Moreover,
+% in (Ho et al., 2020) \cite{ho2020denoising} they use only the mean as a learnable parameter and the variance is set as $\Sigma_{\theta}(\mathrm{x}_{t}, t)=\sigma_{t}^2I$, a time dependent constant such as $\sigma_{t}^{2}=\beta_{t}$ or $\sigma_{t}^{2}=\tilde{\beta}_{t}$.
+
+\noindent In DDPM only show good performance with only learning the mean
+and fix the variance using a time dependent constant $\Sigma_{\theta}(\mathrm{x}_{t}, t) = \sigma_{t}^{2}I$. When they tried to learn the variance they get poor results and unstable training, that in further studies shows how to stabilizie and learn also the variance \citep{nichol2021improved}.
+
 \begin{align}\label{eqn:backward-process-fix-variance}
     p_{\theta}(\mathrm{x}_{t-1}\mid\mathrm{x_{t}}) &= \mathcal{N}(\mathrm{x}_{t-1};~\mu_{\theta}(\mathrm{x}_{t}, t), \sigma_{t}^{2}I)
 \end{align}
-Therefore, we have everything to expand the denoising matching term $L_t$ with $1\leq t < T$ terms \ca{Además, emerge de la definición de KL de sumatorias entre dos gaussiano un MSE.}:
+
+Therefore, we have everything to expand the denoising matching term $L_t$ with $1\leq t < T$ terms \ca{Además, emerge de la \href{https://kvfrans.com/deriving-the-kl/}{definición de KL de sumatorias entre dos gaussiano un MSE}.}: \\
+
+
 
 \noindent \ca{Mejorar esta parte y dar más hincapie a la VLB compartida} Finally, As you can see in Figure~\ref{fig:ddpm-denoising-term}, the denoising matching term within the gray square remarks the VAE loss term. However, there are some differences between the VAE and the DDPM: (i) VAE is optimize in the latent space, while DDPM is optimize in the data space (e.g. CelebaHQ 256x256), (ii) VAE use a kernel that is learnable, while DDPM use a fixed kernel, and (iii) VAE perform a single step of sampling, while DDPM perform a large number of steps, hence is more similar to a hierarchical VAE \citep{luo2022understanding}.\\
 
 
-\subsection{Score-based generative models}\label{sec:ddpm-as-score}
+\section{Score-based generative models}\label{sec:ddpm-as-score}
 
 % \ca{Ver sección 24.3.2 Denoising score matching (DSM) del libro de tópicos avanzados de Murphy}
 
@@ -265,6 +272,8 @@ to allow the reverse process to be close to a Gaussian. In DDPM, the hyperparame
     
 \section{Condition the model}
 
+\ca{\textbf{Completar:} breve introducir classifier guidance cmo principal alternativa de control. Describir experimento con CLIP guidance. \textbf{Importante:} presentar classifier free guidance no comoo competidor, sino como complemento a entrnar grandes mdelos condicines generales cmo SB o Imagen oo Dalle que se complementan con ajustes con reinforcemeent learning.} \\
+
 So far, we know how to learn indirectly the unconditional probability distribution $p(\mathrm{x})$ via the score function $\nabla_{\mathrm{x}}\log p(\mathrm{x})$, but what can we do to condition $\mathrm{x}$ given a signal $\mathrm{y}$, such as a text prompt, another image, or an audio?\\
 
 \noindent By Bayes' theorem, log operations, and taking the gradient w.r.t. $\mathrm{x}$ we got:
@@ -301,7 +310,7 @@ Once a diffusion model is trained, during the sampling process (aka denoising Ga
     \includegraphics[scale=0.5]{ch2-diffusion-models/clip-overview-a.png}
     \captionsetup{width=\textwidth} % set the width of the caption
     %\caption{\textbf{CLIP overview.} Text-to-image joint embedding space. \textbf{Source:} Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, \& Ilya Sutskever. (2021). Learning Transferable Visual Models From Natural Language Supervision.}
-    \caption{\textbf{CLIP overview.} Text-to-image joint embedding space. \textbf{Source:} Learning Transferable Visual Models From Natural Language Supervision \citep{radford2021learning}.}
+    \caption{\textbf{CLIP overview.} Text-to-image joint embedding space. \textbf{Source:} Learning Transferable Visual Models From Natural Language Supervision \citep{radford2021learning}.\textbf{Sirve para explicar Figure~\ref{fig:clip-emb-ddpo-vs-ddpm} de embeddings en capitulo resultados}.}
     \label{fig:clip-overview}
   \end{figure}
 
@@ -338,6 +347,9 @@ Despite the progress in conditioning the model, there are...\\
 % Notably, the work of \cite{rombach2022highresolution} in improving the model architecture and the training process to scale the resolution.
 
 \subsection{Denoising Diffusion Implicit Models}\label{sec:DDIM}
+
+\ca{Simplificar esta sección, destacar más experimento realizado con imagen Pascal}. \\
+
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.87]{ch2-diffusion-models/DDIM-no-markovian.png}

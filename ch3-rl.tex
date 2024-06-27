@@ -2,31 +2,34 @@
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[scale=0.65]{ch3-rl/MDP-diagram.png}
+    \includegraphics[scale=0.63]{ch3-rl/MDP-diagram.png}
     \captionsetup{width=\textwidth} % set the width of the caption
     \caption{\textbf{Left:} A loop representation of a Markov Decision Process (MDP). \textbf{Right:} An unrolled MDP depecting an episodic case with a finite horizon $T$ and a parameterized policy $\pi_{\theta}$.}
     \label{fig:mdp-diagram}
   \end{figure}
 
-Reinforcement learning (RL) is all about the interaction between an agent and the environment. The learning comes in the form of trial-and-error, in which the agent observe the state of the environment, takes actions according to that observations, influencing new possible states configurations, and perceive rewards given its previous decision. Everything is commanded toward achieve a goal such as escaping from a maze, \href{https://arxiv.org/abs/1312.5602}{win some Atari Game} \citep{mnih2013playing}, or \href{https://deepmind.google/technologies/alphago/}{defeating the world champion of Go} \citep{silver2016mastering}. How does the agent knows if the goals is achieving? Given a reward signal, the agent can act in the environment to maximize the cumulative reward, and by this means guides their actions to achieve its goal.
+Reinforcement learning (RL) is all about the interaction between an agent and the environment. The learning comes in the form of trial-and-error, in which the agent observe the state of the environment, takes actions according to that observations, influencing new possible states configurations, and perceive rewards given its previous decision. Everything is commanded toward achieve a goal such as escaping from a maze, \href{https://arxiv.org/abs/1312.5602}{win some Atari Game} \citep{mnih2013playing}, or \href{https://deepmind.google/technologies/alphago/}{defeating the world champion of Go} \citep{silver2016mastering}. How does the agent knows if the goals is achieving? Given a reward signal, the agent can act in its world to maximize the cumulative reward, and by this means guides their actions to achieve its goal. \\
+
+\noindent In this chapter we will introduce RL with the minimal concepts required and focus to implementations. Specifically, we will narrow us to model-free RL, in which the agent is not equiped with a model to learn their 
+environment, and it is just concentrate on consume the experience from the world and learning to act on it.
 
 
 \section{The Framework for Learning to Act}
 
-\ca{Basarse en sección 2.1 y 2.2 de tesis de Schulman \cite{schulman2016optimizing}}
+\ca{\textbf{Terminar introducción de interfaz MDP y notación}. Basarse en una presentación como las secciones 2.1 y 2.2 de tesis de Schulman \cite{schulman2016optimizing}}
 
-Understanding reinforcement learning (RL) involves grasping several fundamental concepts and their associated notation. Below are the key components that form the basis of RL, drawing on established literature and references.
+Understanding reinforcement learning (RL) involves grasping several fundamental concepts and their associated notation. Below are the key components that form the basis of RL \cite{Sutton1998}.
 
 Agent, Environment, and Actions:
 \begin{enumerate}
     \item Agent: The learner or decision-maker in the RL framework, responsible for taking actions to achieve a goal. 
     \item Environment: The external system or world in which the agent operates. It responds to the agent's actions and provides feedback in the form of rewards and new states. 
-    \item Actions (A): The set of all possible moves or decisions the agent can make. Actions can be discrete (e.g., moving left or right) or continuous (e.g., adjusting the speed of a vehicle). 
-    \item State (S): A representation of the current situation or configuration of the environment. States capture all the necessary information for decision-making at any point in time.
+    \item Actions ($\mathcal{A}$): The set of all possible moves or decisions the agent can make. Actions can be discrete (e.g., moving left or right) or continuous (e.g., adjusting the speed of a fly drone). 
+    \item State ($\mathcal{S}$): A representation of the current situation or configuration of the environment. States capture all the necessary information for decision-making at any point in time.
 \end{enumerate}
 
 
-\ca{What's the objective? maximize the expected reward...}
+\ca{\textbf{Destacar el objetivo a resolver por RL desde un comienzo} -> What's the objective? maximize the expected reward...}
 
 The main difference between Supervised Learning and Reinforcement Learning is that we don't have a direct feedback of each action through a label. Even in the case that we have a label for an action, we're just not simply interested in the evaluation of individual actions, instead we are interested in the overall trajectory performance, and intertwined of states $s_t$ and actions $a_t$. So, how can we obtained feedback for backpropagated it through agent's parameters to provide corrections about its actions?
 
@@ -44,10 +47,12 @@ Here we will introduce the notation to describe an MDP:
 \section{Policy Optimization}
 
 %https://proceedings.neurips.cc/paper_files/paper/1999/file/464d828b85b0bed98e80ade0a5c43b0f-Paper.pdf
-\ca{En paper policy gradient methods with function approximation} ``the policy might be represented by a neural network whose input is a representatioon of the state, whose output is action selectioon probabilities, and whose weights are the policy parameters.'' \cite{sutton1999policy} Reusar esta descripcción de la policy represntada por una función de aproximación parametrizada.
+\ca{\textbf{Agregar introducción antes de 3.2.1.}. Básicamente el objetivo de resolver directamente el problema anterior optimizando la policy.}
+
+\ca{En paper policy gradient methods with function approximation se resume de buena manera:}. ``the policy might be represented by a neural network whose input is a representatioon of the state, whose output is action selectioon probabilities, and whose weights are the policy parameters.'' \cite{sutton1999policy} Reusar una descripcción de este estilo sobre la policy representada por una función de aproximación parametrizada. \\
 
 % Tesis de Schulman final capítulo 4 GAE
-\noindent Destacar esto...``Policy gradient methods provide a way to reduce reinforcement learning to stochastic gradient descent, by providing unbiased gradient estimation...success...has been limited, largely due to their high sample complexity...''
+\noindent Destacar esto...``Policy gradient methods provide a way to reduce reinforcement learning to stochastic gradient descent, by providing unbiased gradient estimation...success...has been limited, largely due to their high sample complexity...''\ca{Vincular con Figure~\ref{fig:rl-model-free-taxonomy} sobre la diferencia con otros métodos.} \\
 
 
 \begin{figure}[h]
@@ -62,7 +67,6 @@ Represent the agent with a function approximator, and we will use a deep neural 
 
 The policy is a distributions over actions spawned conditional the states.
 
-\textbf{TODO:} Introduce what we want to maximize, the expected return of the trajectory, and the gradient estimation via score function.
 
 \subsection{Learning the Policy}
 
@@ -194,10 +198,10 @@ probabilities are disregarded because they are independent of $\theta$, thereby 
 \noindent The core concept is to collect a set of trajectories $\mathcal{D}$ 
 by running the policy $\pi_{\theta}$ and update the policy parameters $\theta$ to increase the likelihood of high-reward trajectories while decreasing the likelihood of low-reward ones, as illustrated in Figure~\ref{fig:anatomy-rl-trajectories}. This trial-and-error learning approach, described in Algorithm~3, repeats this process over multiple iterations, reinforcing successful trajectories and discouraging unsuccessful ones, thus encoding the agent's behavior in its parameters. \\
 
-% L3 Foundations of Deep RL series (Pieter  Abbeel)
+% Basado en L3 Foundations of Deep RL series (Pieter  Abbeel)
 % https://youtube.com/watch?v=AKbX1Zvo7r8
 \noindent \textbf{Reduce the variance of the estimator}. Using two techniques,
-\textit{reward-to-go} (aka temporal structure) and \textit{baseline}, we can improve the quality of the gradient estimator in Equation~\ref{eqn:reinforce-gradient-estimator}. \ca{Video de L3 / Abbeel}
+\textit{reward-to-go} (aka temporal structure) and \textit{baseline}, we can improve the quality of the gradient estimator in Equation~\ref{eqn:reinforce-gradient-estimator}. 
 
 \begin{figure}[ht]
     \centering
@@ -214,14 +218,14 @@ by running the policy $\pi_{\theta}$ and update the policy parameters $\theta$ t
     \STATE Initialize policy $\pi_{\theta}$, set learning rate $\alpha$
     % \STATE Generate $\tau=(s_0, a_0, ..., s_{T-1}, a_{T-1}, s_{T})$ by sampling from current $\pi_{\theta}$
     \FOR {$\text{iteration}=0, 1, 2, \dots, N$}
-        \STATE Collect a set of trajectories $\mathcal{D}=\{\tau^{(i)}\}_{0:T-1}$ by sampling from the current policy $\pi_{\theta}$
+        \STATE Collect a set of trajectories $\mathcal{D}=\{\tau^{(i)}\}$ by sampling from the current policy $\pi_{\theta}$
         \STATE Calculate the returns $R(\tau^{(i)})$ for each trajectory $\tau^{(i)}$
-        \STATE Update the policy: $\theta \leftarrow \theta + \alpha \bigg(\frac{1}{|\mathcal{D}|(T-1)}\sum_{\tau^{(i)}\in\mathcal{D}}\sum_{0}^{T-1}\nabla_{\theta}\log\pi_{\theta}(a_{t}\mid s_{t})R(\tau^{(i)})\bigg)$
+        \STATE Update the policy: $\theta \leftarrow \theta + \alpha \bigg(\frac{1}{|\mathcal{D}|(T-1)}\sum_{\tau^{(i)}\in\mathcal{D}}\sum_{0}^{T-1}\nabla_{\theta}\log\pi_{\theta}(a_{t}^{(i)}\mid s_{t}^{(i)})R(\tau^{(i)})\bigg)$
     \ENDFOR
     \end{algorithmic}
 \end{algorithm}
 
-\noindent \ca{Aca reward-to-go y explicar idealmente prque menos terminos reduce la varianza} A naive estimate of $R(\tau)$ uses the total trajectory reward, which means that every action is weighted by the total reward. Even if the gradient estimator is unbiased, we need to consider the variance of the estimator.
+\noindent \ca{\textbf{Explicar porqué reward-to-go reduce la varianza.}} A naive estimate of $R(\tau)$ uses the total trajectory reward, which means that every action is weighted by the total reward. Even if the gradient estimator is unbiased, we need to consider the variance of the estimator.
 To reduce this variance, we can impose causality by using rewards-to-go, i.e., the sum of rewards from the current time-step to the end of the trajectory. This simple trick can reduce variance. 
 
 \begin{equation}\label{eqn:reinforce-gradient-reward-to-go}
@@ -256,28 +260,57 @@ variance of the gradient estimator by using a baseline function, $b(s_{t})$, wit
 \noindent We can remove irrelevant variables from the expectation over the portion of the trajectory $\tau_{(t+1):(T-1)}$ because we are focusing on the term at step $t$. The only relevant variable is $a_{t}$, and the expectation $\mathbb{E}_{a_{t}}\log\pi_{\theta}(a_{t}\mid s_{t})$ is 1. Given that the
 gradient with respect to $\theta$ of a constant is zero, and $b(s_{t})$ is multiplying it, the effect of the baseline on the expectation is nullified. This argument can be applied to any other term in the sequence due to the linearity of the expectation. Therefore, we have proven that using a baseline also keeps the gradient estimator unbiased in the policy gradient setting. \\
 
-\noindent \textbf{What baseline to use?} Estimate the \textit{advantage function} $A_{t} = \sum_{t=0}^{T-1} r_{t}^{'}-b(s_{t})$...\ca{\textbf{TODO:} introducir términos para (i) $R(\tau)$ y (ii) $b(s_{t})$. Además especificar que el uso de MSE loss para ajustar state-value function que se usa como baseline...}
+\noindent \textbf{What baseline to use?} Estimate the \textit{advantage function} $A_{t} = \sum_{t=0}^{T-1} r_{t}^{'}-b(s_{t})$...\ca{\textbf{TODO:} introducir términos para (i) $R(\tau)$ y (ii) $b(s_{t})$.}.
+
+\begin{enumerate}
+    \item Constant baseline, $b=\mathbb{E}\left[ R(\tau)\right]\approx \frac{1}{m}\sum_{t=0}^{T-1} R(\tau^{(i)})$
+    \item Optimal constant baseline
+    \item Time-dependent baseline
+    \item State-dependent expected return $b(s_{t})$ such as $V^{\pi}(s_{t})=\mathbb{E}\left[ r_{t} + r_{t+1} + \dots + r_{T-1}\right]$
+\end{enumerate}
+
+\noindent Increase logprob of action proportionally to how much its returns are better 
+than the expected return under the current policy...\ca{parafrasear, calcado de L3}.
+
+\begin{equation}
+    \mathbb{E}_{\tau\sim p_{\theta}(\tau)} \bigg[\sum_{t=0}^{T-1}\nabla_{\theta}\log\pi_{\theta}(a_{t}|s_{t}) \bigg( \sum_{t=t'}^{T-1} r_{t'}-V^{\pi}(s_{t}) \bigg) \bigg]
+\end{equation}
+
+\section{Actor-Critic Methods}
+
+\ca{\textbf{Introducir actor-critic como método de aprender en conjunto la política y la función de valor.} Mostrar variante de REINFORCE aproximando
+la función de valor y que se puede aprender con MSE. Acá retomar Figure~\ref{fig:rl-model-free-taxonomy} que es donde se junta policy optimizatioon con dynamic programing.} \\
+
+Actor-Critic referred to learn concurrently models for the policy and the value function. A way to amortize the monte carlo estimations given the samples collected. The acor upddates the policy parameteers as we see in previous sections, whereas the critic updates the value parameters and could be state-value $V$ or action-value $Q$. \\
+
+\noindent The model can share or nor parameters, the former means that have a common feature space. \\
+
+\noindent Use as baseline the value function. Use function approximator for the value function and learn simultaneously with the policy....what is an actoor and critic method? \\ 
+
+\noindent Regress against empirical return (supervised learning problem), therefore the loss for learn the value function is the MSE. Introduce Algorithm~4... \\
+
 
 \begin{algorithm}
-    \caption{REINFORCE with advantage \ca{\textbf{TODO:} terminar de detallar este algoritmo...}}
+    \caption{REINFORCE with advantage}
     \begin{algorithmic}
     \STATE Initialize policy $\pi_{\theta}$, set learning rate $\alpha$
-    \STATE Initialize a value $V_{\phi}$
+    \STATE Initialize value $V_{\phi}$
     \FOR {$\text{iteration}=0, 1, 2, \dots, N$}
-        \STATE Collect a set of trajectories $\mathcal{D}=\{\tau^{(i)}\}_{0:T-1}$ by sampling from the current policy $\pi_{\theta}$
+        \STATE Collect a set of trajectories $\mathcal{D}=\{\tau^{(i)}\}$ by sampling from the current policy $\pi_{\theta}$
         \STATE Calculate the returns $R(\tau^{(i)})$ for each trajectory $\tau^{(i)}$
-        \STATE Update the policy: $\theta \leftarrow \theta + \alpha \bigg(\frac{1}{|\mathcal{D}|(T-1)}\sum_{\tau^{(i)}\in\mathcal{D}}\sum_{0}^{T-1}\nabla_{\theta}\log\pi_{\theta}(a_{t}\mid s_{t})R(\tau^{(i)})\bigg)$
-        \STATE Update the value: $\phi \leftarrow \phi + \alpha \bigg(\frac{1}{|\mathcal{D}|(T-1)}\sum_{\tau^{(i)}\in\mathcal{D}}\sum_{0}^{T-1}\nabla_{\phi}V_{\phi}(s_{t})\bigg)$
+        \STATE Update the policy: $\theta = \theta + \alpha \bigg(\frac{1}{|\mathcal{D}|(T-1)}\sum_{\tau^{(i)}\in\mathcal{D}}\sum_{0}^{T-1}\nabla_{\theta}\log\pi_{\theta}(a_{t}^{(i)}\mid s_{t}^{(i)})(R(\tau^{(i)}) - V_{\phi}(s_{t}^{(i)}))\bigg)$
+        \STATE Update the value: $\phi \leftarrow \phi + \alpha \bigg(\frac{1}{|\mathcal{D}|(T-1)}\sum_{\tau^{(i)}\in\mathcal{D}}\sum_{0}^{T-1}(R(\tau^{(i)}) - V_{\phi}(s_{t}^{(i)}))\nabla_{\phi}V_{\phi}(s_{t}^{(i)})\bigg)$
     \ENDFOR
     \end{algorithmic}
 \end{algorithm}
-
 
 
 % \noindent \ca{Terminar esta parte...} We know that introducing a baseline keeps the estimator unbiased, but why the baseline can reduce the variance of the estimator? In \cite{seita2017going} there is an explanation of how to rearrange the variance of the score function and queda formulado una esperanza factorizada donde esta el retorno menos el baseline. De poder optimizarse, se puede formular como least square error, y la función de baseline ideal sería estimar el retorno esperado. Así sabemos si el retorno esta sobre o bajo el retorno esperado, y reduciendo la varianza  del estimador al mismo tiempo...preguntar sobre manipulación de la esperanza y agregar formulación!
 
 
 \section{Deep Reinforcement Learning}
+
+\ca{\textbf{Sección Incompleta:} No me convence, si va la completo al final, solo demostrar como el área de RL ha realizado modificaciones para adaptar redes neuronales lo más parecido a lo que es en aprendizaje supervisad.}
 
 The REINFORCE algorithm is a simple and powerful algorithm to learn the policy,
 even more when we equipped the agent with a neural network as a function 
@@ -307,6 +340,33 @@ automatic differentiation engines such as PyTorch or JAX.
 
 \noindent We will use a convolutional neural network design to learn features from raw input such as RGB images or video frames. Without any prior information about the ATARI game more than the inductive bias of the neural network tailord to process images, we will learn a policy that maximize the reward, i.e., win the game. \\
 
+% \begin{sourcecode}[\label{agent-interface}]{python}{Actor-Critic Interface.}
+%     class Agent(nn.Module):
+%         def __init__(self, envs):
+%             super(Agent, self).__init__()
+%             self.critic = nn.Sequential(
+%                 layer_init(nn.Linear(np.array(envs.single_observation_space.shape).prod(), 64)),
+%                 nn.Tanh(),
+%                 layer_init(nn.Linear(64, 64)),
+%                 nn.Tanh(),
+%                 layer_init(nn.Linear(64, 1), std=1),
+%             )
+
+%             self.actor = nn.Sequential(
+%                 layer_init(nn.Linear(np.array(envs.single_observation_space.shape).prod(), 64)),
+%                 nn.Tanh(),
+%                 layer_init(nn.Linear(64, 64)),
+%                 nn.Tanh(),
+%                 layer_init(nn.Linear(64, envs.single_action_space.n), std=0.01)
+%             )
+% \end{sourcecode}
+
+
+% \begin{sourcecode}[\label{training-loop}]{python}{Training-Loop}
+%     x = 2
+% \end{sourcecode}
+
+
 % \noindent The preprocessing regarding the raw Atari images is from $210\times 160$ pixel images
 
 \noindent Regarding the preprocessing of the raw Atari images, we follow the instructions
@@ -319,10 +379,9 @@ region of the pixels that represent the ``playing area''.
 
 % \ca{Util de referencia en literatura \cite{peshkin2002learning}}
 
-The main drawback of the REINFORCE algorithm is its sample complexity. Once we roll out the policy and collect the data, we cannot reuse it after the policy has been updated. We must collect new data following the \textit{target policy} $\pi_{\theta}$ that we want to update. In RL literature, this is referred to as \textit{on-policy} learning. Reusing the data $\mathcal{D}\sim\pi_{\theta_{\text{old}}}$ to update the current policy $\pi_{\theta}$ would significantly improve sample efficiency. However, once we update the policy, the previously collected data is no longer valid because the policy has changed. The distribution from which the data was sampled is now $\pi_{\theta_{\text{old}}}$. \\
+The main drawback of the REINFORCE algorithm is its sample complexity. Once we roll out the policy and collect the data, we cannot reuse it after the policy has been updated. We must collect new data following the \textit{target policy} $\pi_{\theta}$ that we want to update. In RL literature, this is referred to as \textit{on-policy} learning. Reusing the data $\mathcal{D}\sim\pi_{\theta_{\text{old}}}$ to update the current policy $\pi_{\theta}$ would significantly improve sample efficiency\footnote{This issue also arises when attempting to transfer behavior from one task to another using existing data.}. However, once we update the policy, the previously collected data is no longer valid because the policy has changed. The distribution from which the data was sampled is now $\pi_{\theta_{\text{old}}}$. \\
 
-\noindent Using behavior data learned from another policy, known as a \textit{behavior policy}, to update the current policy is referred to as \textit{off-policy} learning in RL literature. Let's introduce a \textit{behavior policy} in the RL objective defined in Equation~\ref{eqn:rl-objective} using \href{https://timvieira.github.io/blog/post/2014/12/21/importance-sampling/}{importance sampling
-}:
+\noindent Using behavior data learned from another policy, known as a \textit{behavior policy}, to update the current policy is referred to as \textit{off-policy} learning in RL literature. Let's introduce a \textit{behavior policy} in the RL objective defined in Equation~\ref{eqn:rl-objective} using \href{https://timvieira.github.io/blog/post/2014/12/21/importance-sampling/}{importance sampling} (See Mckay book, Section 29.2 \cite{mackay-book}):
 
 % Derive RL objective with importance sampling to use data from another policy
 \begin{equation}\label{eqn:derive-rl-objective-with-is}
@@ -336,7 +395,8 @@ The main drawback of the REINFORCE algorithm is its sample complexity. Once we r
     \end{split}
 \end{equation}
 
-\noindent We derive a new objective that is more general and reconciles both \textit{on-policy} and \textit{off-policy} learning.
+\noindent We derive a new objective that is more general and reconciles both \textit{on-policy} and \textit{off-policy} learning in the importance weight,
+or importance correction ($p_{\theta}(\tau) / p_{\theta_{\text{old}}}(i\tau)$). 
 
 % RL objective with IS
 \begin{equation}\label{eqn:rl-objective-with-is}
@@ -361,21 +421,41 @@ stability. \\
 
 \section{Trust Region and Proximal Policy Optimization}
 
-\ca{Agregar función objetivo...de Costa Huang. Paper TRPO \cite{schulman2015trust} y PPO \cite{schulman2017proximal}}
+\ca{\textbf{Sección Incompleta:} Introducir trust region para resolver problema anterior y solución práctica que deriva en PPO.}
 
-% See [Schulman 2015 \cite{schulman2015trust}], section 3.10 with the proof.
+In 2015, Schulman \cite{schulman2015trust} introduced Trust Region Policy Optimization (TRPO) to address the challenge of balancing policy improvement with stability in reinforcement learning \ca{Cambiar este párrafo...}. 
 
+\begin{align}
+    \text{Surrogate loss:} \quad & \underset{\pi_{\theta}}{\max}~L(\pi) = \mathbb{E}_{\pi_{\theta_{\text{old}}}} \left[ \frac{\pi_{\theta}(a\mid s)}{\pi_{\theta_{\text{old}}}(a\mid s)} A^{\pi_{\theta_{\text{old}}}}(s, a) \right] \label{eq:loss} \\
+    \text{Constraint:} \quad & \mathbb{E}_{\pi_{\text{old}}} \left[ D_{\text{KL}}(\pi_{\theta} || \pi_{\theta_{\text{old}}}) \right]  \leq \epsilon, \nonumber
+\end{align}
 
-Show a high level overview of TRPO (Pieteer Abbel L4). Make efficient use of data (compare with classic PG). The core idea is the policy in a way that ``improve a certain surrogate objective as much as possible, while changing the policy as little as possible, where this is change is measured as a KL divergence between action distributions.'' Trut region 
-is a region where the policy is close to the old policy and we can achieve this constraint improvement.
+%\noindent \textbf{Maximize data efficiency in comparison to traditional policy gradients}. 
 
-Then, PPO simplify objective to avoid a second-order optimization, showing
-good results and be the de-facto standard in RL \cite{dlr191986}. 
+\noindent Increase data efficiency while avoiding step size problems in updating parameters, compared to traditional policy gradients (PG). The main idea is to improve a surrogate objective significantly while making minimal changes to the policy. These minimal changes are quantified using the KL divergence between action distributions. The trust region is the area where the new policy remains close to the old one, guarantee training stability. \\
+
+% The trust region is the area where the new policy remains close to the old one, allowing for constrained improvement. \\
+
+\noindent Proximal Policy Optimizatino (aka PPO) is about simplify TRPO in order to be (i) easy to implement avoiding second order optimizatioon (ii) take advantage of first order optimizer such as ADAM, and (iii) be more compatible
+with neural networks operations such as dropout that is incompatible with TRPO 
+setting\footnote{Which use the stochastic graph with hessian...}. Let's rename the importance weights as the probability ratio $r$: 
+
+\begin{equation}\label{eqn:importance-ratio-is}
+    r_{t}(\theta) = \frac{\pi_{\theta}(a_{t}\mid s_{t})}{\pi_{\theta_{\text{old}}}(a_{t}\mid s_{t})}
+\end{equation}
+
+\noindent The strategy is to keep this ratio closer to 1. We can create a trust region via clipping the ratio to force within a range $\left[1-\epsilon, 1+\epsilon \right]$. \ca{\textbf{TODO:} Agregar las dos versiones de funciones de loss en paper PPO.}
+
+\begin{equation}
+    L^{\text{CLIP}}(\theta) = \mathbb{E}_{t} \left[ \min(r_{t}(\theta)\hat{A}_{t})\right]
+\end{equation}
+
+\noindent For a walkthrough implementation that cover important details avoid in the paper and that impact significatnly in the performance, review (Huang, 2023 \cite{dlr191986}).
 
 
 % algoritmo naive REINFORCE
 \begin{algorithm}
-    \caption{Proximal Policy Optimization (PPO)}
+    \caption{Proximal Policy Optimization (PPO) \textbf{Agregar algoritmo.}}
     \begin{algorithmic}
     \STATE Initialize policy parameter $\theta$, set learning rate $\alpha$
     \STATE Generate $\tau=(s_0, a_0, ..., s_{T-1}, a_{T-1}, s_{T})$ by sampling from current $\pi_{\theta}$
@@ -390,11 +470,15 @@ good results and be the de-facto standard in RL \cite{dlr191986}.
 
 \section{Reinforcement Learning From Human Feedback}
 
+\ca{\textbf{Sección Incompleta:} acá er muy breve y explicar como el humano puede interactuar dentro de la interfaz MDP, agregar diagrama con la interacción vía modelo de reward y el ciclo presentado en Figure~\ref{fig:anatomy-rl-algo}}.
+
 In this section we will brielfy put in context what the hell is RLHF.
 For design and train reward model we refer to XYZ.
 
 
 \section{Summary}
+
+\ca{Resumir muy breve todo lo anterior.}
 
 In a summary, solve a reinforcement learning problem
 via proximal policy...
