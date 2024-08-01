@@ -292,7 +292,8 @@ Actor-Critic referred to learn concurrently models for the policy and the value 
     \mathbb{E}_{\tau\sim p_{\theta}(\tau)} \bigg[\sum_{t=0}^{T-1}\nabla_{\theta}\log\pi_{\theta}(a_{t}|s_{t}) \bigg( \sum_{t'=t}^{T-1} R(a_{t'}, s_{t'}) - V_{\phi}^{\pi}(s_{t}) \bigg) \bigg]
 \end{equation}
 
-\noindent The objective is to minimize the mean squared error (MSE) between the estimated value and the empirical return, i.e. we are regress the value against empirical return in a supervised learning fashion. \ca{Mencionar conexión con el mse a partir de la varianza del gradiente? (Seita post)}:
+\noindent The objective is to minimize the mean squared error (MSE) between the estimated value and the empirical return, i.e. we are regress the value against empirical return in a supervised learning fashion. 
+% \ca{Mencionar conexión con el mse a partir de la varianza del gradiente? (Seita post)}:
 
 \begin{equation}\label{eqn:value-function-loss}
    \phi \leftarrow \underset{\phi}{\arg\min} \frac{1}{\mid\mathcal{D}^{\pi_{\theta}}\mid}\sum_{\tau\in\mathcal{D}^{\pi_{\theta}}}\sum_{t=0}^{T-1}\left[\left(\left(\sum_{t'=t}^{T-1} R(a_{t'}, s_{t'})\right) - V_{\phi}(s_{t})\right)^2~\right]
@@ -317,7 +318,7 @@ Actor-Critic referred to learn concurrently models for the policy and the value 
     \end{algorithmic}
 \end{algorithm}
 
-\noindent \textbf{Advantage estimation}. Variance reduction by discounting, treateing $\gamma$ as an hyperparameter to improve $Q$ estimate...then A3C with Q k-steps lookahead estimation, and finally GAE. \ca{TODO...}
+% \noindent \textbf{Advantage estimation}. Variance reduction by discounting, treateing $\gamma$ as an hyperparameter to improve $Q$ estimate...then A3C with Q k-steps lookahead estimation, and finally GAE. \ca{TODO...}
 
 
 \section{Improving Sample Efficiency: Behavior and Target Policies}
@@ -382,7 +383,7 @@ balancing the policy improvement with stability.
 
 % The trust region is the area where the new policy remains close to the old one, allowing for constrained improvement. \\
 
-\noindent Proximal Policy Optimization (PPO) \cite{schulman2017proximal} is about simplify TRPO in order to (i) be easier to implement avoiding solve the second order optimization in Equation~\ref{eqn:trpo-loss}, (ii) taking advantage of first order optimizer such as ADAM \cite{kingma2017adammethodstochasticoptimization}, and (iii) be more compatible with neural networks operations such as dropout that are incompatible with TRPO setting\footnote{Which use the stochastic graph with hessian...}. \\
+\noindent Proximal Policy Optimization (PPO) \cite{schulman2017proximal} is about simplify TRPO in order to (i) be easier to implement avoiding solve the second order optimization in Equation~\ref{eqn:trpo-loss}, (ii) taking advantage of first order optimizer such as ADAM \cite{kingma2017adammethodstochasticoptimization}, and (iii) be more compatible with neural networks operations such as dropout that are incompatible with TRPO setting. \\
 
 \noindent Let's rename the importance weights as the probability ratio $r$: 
 
@@ -390,13 +391,13 @@ balancing the policy improvement with stability.
     r_{t}(\theta) = \frac{\pi_{\theta}(a_{t}\mid s_{t})}{\pi_{\theta_{\text{old}}}(a_{t}\mid s_{t})}
 \end{equation}
 
-\noindent The strategy is to keep this ratio closer to 1. We can create a trust region via clipping the ratio to force within a range $\left[1-\epsilon, 1+\epsilon \right]$. \ca{\textbf{TODO:} Agregar las dos versiones de funciones de loss en paper PPO.}
+\noindent The strategy is to keep this ratio closer to 1. We can create a trust region via clipping the ratio to force within a range $\left[1-\epsilon, 1+\epsilon \right]$. 
 
 \begin{equation}\label{eqn:clip-ac-objective}
 \mathcal{L}^{\text{CLIP}}(\theta) = \hat{\mathbb{E}}_t \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right) \right]
 \end{equation}
 
-\noindent For a walkthrough implementation that cover important details avoid in the paper and that impact significatnly in the performance, review (Huang, 2023 \cite{dlr191986}).
+\noindent For a walkthrough implementation that cover important details avoid in the paper and that impact significatnly in the performance, review the work \textit{``The 37 implementation details of proximal policy optimization''} (Huang, 2023 \cite{dlr191986}).
 
 
 % algoritmo naive REINFORCE
@@ -440,7 +441,7 @@ via an utility function that design to consume different types of feedbacks. For
 P(\tau_{1}\succ\tau_{2}) = \frac{1}{1 + \exp(R(\tau_{2}) - R(\tau_{1}))}
 \end{equation*}
 
-\noindent given a collection of trajectories $\mathcal{D}$ where $\succ$ means ``preferred to'' and $R(\tau)$ correponds to the utility (i.e. return in the context of RL). ...it could be between an intermediate feature maps that allows to the human gives feedback in a useful way but provide a scalar signal easily to digest by the agent. The reward model can be trained using supervised learning, imitation learning, or inverse reinforcement learning. The reward model can be used in different ways, such as reward shaping, reward augmentation, or reward correction. \\
+\noindent given a collection of trajectories $\mathcal{D}$ where $\succ$ means ``preferred to'' and $R(\tau)$ correponds to the utility (i.e. return in the context of RL) and it could be between an intermediate feature maps that allows to the human gives feedback in a useful way but provide a scalar signal easily to digest by the agent. The reward model can be trained using supervised learning, imitation learning, or inverse reinforcement learning. The reward model can be used in different ways, such as reward shaping, reward augmentation, or reward correction. \\
 
 \begin{equation}
     \underset{\phi}{\max} \prod_{i=1}^{N}\frac{1}{1 + \exp\left(1 + \exp(R_{\Phi}) \right)}
@@ -449,7 +450,12 @@ P(\tau_{1}\succ\tau_{2}) = \frac{1}{1 + \exp(R(\tau_{2}) - R(\tau_{1}))}
 % \noindent \textbf{Alignment via reward modeling}. Train a reward model over human preferences \cite{leike2018scalable}, then use it to train the agent. The model can provide a reward signal that is more aligned with the human preferences. \\
 
 \noindent Several human feedback types can distill into rewards models such as critique, comparisons, inter-temporal feedback, proxy rewards, social behavior, improvements, and natural language \cite{kaufmann2023survey}. Specifically,
-for visual perception tasks, some interesting research lines are leveraging general human knowledge from large pretrained visual language models to provide feedback to the agent if it achieve success (i.e. success detectors) on the task in which is reinforced \cite{du2023visionlanguagemodelssuccessdetectors}. In the context of diffusion models \cite{black2023training}, a language vision for the model (e.g. LLaVA) allows into a joint-embedding space and compute a BERT score... model (e.g. LLaVA) for prompt alignment. The idea is to give samples generated. There is also the work that \cite{lee2023aligning}.
+for visual perception tasks, some interesting research lines are leveraging general human knowledge from large pretrained visual language models to provide feedback to the agent if it achieve success (i.e. success detectors) on the task in which is reinforced \cite{du2023visionlanguagemodelssuccessdetectors}. 
+The main point is that once we have a reward model we can move from a standard RL setting to a RLHF setting, as shown in Figure~\ref{fig:rlhf-setting}. The
+reward model requires a labeler to encode the human preferences into the
+model weights, but once it is trained, the human preferences can be use asynchrounous and continuosly to provide feedback. \\
+
+% In the context of diffusion models \cite{black2023training}, a language vision for the model (e.g. LLaVA) allows into a joint-embedding space and compute a BERT score. model (e.g. LLaVA) for prompt alignment. The idea is to give samples generated. There is also the work that \cite{lee2023aligning}.
 
 
 \section{Summary}

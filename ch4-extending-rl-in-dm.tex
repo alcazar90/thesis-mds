@@ -94,15 +94,18 @@ In other words, the agent learns how to denoise trajectories to maximize the exp
       (\text{DDPO}_{\text{IS}})~~ \mathcal{L} =  \mathbb{E}_{\mathrm{x}_{T:0}\sim p_{\theta_{\text{old}}}} \left[ \sum_{t=0}^{T}r_{t} \log p_{\theta}(\mathrm{x}_{t-1}\mid \mathrm{x}_{t}) A \right]
     \end{split}
   \end{equation*}
-  \item The reward is not used directly to update the policy, instead is used to compute the advantage function $A$ that is used to update the policy. 
-  The advantage function is defined as $A = R - V$, where $R$ is the reward and $V$ is the value function as explained in Section~\ref{sec:actor-critic}. However, in DDPO the value function is not used, and the advantage function is computed as a normalization of the batch rewards used to update the policy
-  parameters.
+  % \item The reward is not used directly to update the policy, instead is used to compute the advantage function $A$ that is used to update the policy. 
+  % The advantage function is defined as $A = R - V$, where $R$ is the reward and $V$ is the value function as explained in Section~\ref{sec:actor-critic}. However, in DDPO the value function is not used, and the advantage function is computed as a normalization of the batch rewards used to update the policy
+  % parameters.
+  \item Finally, it is straightforward to compute $\log p_{\theta}$ considering that $p_{\theta}$ is a conditional gaussian distribution 
+  $\mathcal{N}(\mu_{\theta}(\mathrm{x}_{t})\mid\mathrm{x}_{t-1}, \alpha)$, where
+  $\mu_{\theta}$ is a neural network such as U-net architecture parameterized by $\theta$. 
 \end{enumerate}
 
-\noindent It is straightforward to compute $\log p_{\theta}$ considering that
-$p_{\theta}$ is a conditional gaussian distribution 
-$\mathcal{N}(\mu_{\theta}(\mathrm{x}_{t})\mid\mathrm{x}_{t-1}, \alpha)$, where
-$\mu_{\theta}$ is a neural network such as U-net architecture parameterized by $\theta$. %\ca{Agregar cómo despejar la formula para obtener el código?}
+% \noindent It is straightforward to compute $\log p_{\theta}$ considering that
+% $p_{\theta}$ is a conditional gaussian distribution 
+% $\mathcal{N}(\mu_{\theta}(\mathrm{x}_{t})\mid\mathrm{x}_{t-1}, \alpha)$, where
+% $\mu_{\theta}$ is a neural network such as U-net architecture parameterized by $\theta$. %\ca{Agregar cómo despejar la formula para obtener el código?}
 
 % \section{Extending RL in diffusion models}\label{sec:extending-methodology}
 
@@ -197,7 +200,9 @@ $\mu_{\theta}$ is a neural network such as U-net architecture parameterized by $
 \end{figure}
 
 % 1er párrafo sección de análisis empírico
-\textbf{Is the reward behavior informative during sample trajectories?} The previous discussion about the roadmap to extend the DDPO formulation for using the reward signal from intermediate diffusion states imply that the reward signal is informative throughout the trajectory. This is a key aspect to consider when applying the reward function in the diffusion model context, as it should guide the agent to maximize the reward. In this section, we present an empirical analysis of the reward signal dynamics during the sample generation process. We leverage the unconditional \href{https://huggingface.co/google/ddpm-celebahq-256}{\texttt{google/ddpm-celebahq-256}} \cite{ho2020denoising} pretrained diffusion model on the celebrities faces dataset (Celebahq-256 \citep{karras2017progressive}) to compile a set of trajectory samples, denoted as $\mathcal{S}_o$. \\
+\textbf{Is the reward behavior informative during sample trajectories?} 
+In the previous section, we observed that DDPO relies solely on the reward from the final sample. In this section, we explore the potential of the reward signal from intermediate diffusion states, which could provide valuable insights for extending the DDPO framework to utilize the reward signal throughout the entire sample trajectory. This is crucial when applying the reward function in the context of diffusion models, as it should effectively guide the agent to maximize the reward. We present an empirical analysis of the reward signal dynamics during the sample generation process. To do so, we use the unconditional pretrained diffusion model \href{https://huggingface.co/google/ddpm-celebahq-256}{\texttt{google/ddpm-celebahq-256}} \cite{ho2020denoising}, trained on the CelebA-HQ dataset \citep{karras2017progressive}, to compile a set of trajectory samples, denoted as $\mathcal{S}_o$. \\
+
 
 \noindent The $1000$ observations in $\mathcal{S}_{0}$ comprises a summary of six intermediate states extracted from each trajectory. We will sample from the model using a $40$ step subsequence $\tau$ of the diffusion chain using the \texttt{DDIMScheduler} \cite{song2020denoising}, speeding up the sampling process over the original diffusion chain of $T=1000$ steps, as we explained in section~\ref{sec:DDIM}. For computational constraint, only six intermediate state of the subsequence $\tau$ are saved, and the equivalence of this summary states $\mathrm{x}_{\tilde{t}}$ with the original DDPM steps are given in the following tuples: $(\tilde{t}=0, t=1000), (\tilde{t}=1, t=975), (\tilde{t}=2, t=725), (\tilde{t}=3, t=475), (\tilde{t}=4, t=225), (\tilde{t}=5, t=0)$. Therefore, the trajectories are describe starting from the Gaussian noise, then jumping to the step $975$, $725$, until the final sample $\mathrm{x}_{t=0}$, or $\mathrm{x}_{\tilde{t}=5}$. \\
 
@@ -404,31 +409,32 @@ as hair voluminzation \& definition, lightening of hair tones, increasing the co
 % donde se observa que el modelo se especializa en su objetivo (Figura~\ref{fig:reward_hist}, purple). En cada iteración que se recolecta un nuevo
 % conjunto de imágenes, estas tiende en promedio a tener mayor aesthetic score que las anteriores, y una menor dispersión de las recompensas. \\
 
-\noindent A significant difference compared to parameter tuning in previous tasks is the requirement for a more complex training dynamic to achieve higher rewards. In previous tasks, a learning rate of $9e-8$ was used, but maximizing aesthetic quality \href{https://wandb.ai/alcazar90/ddpo-aesthetic-ddpm-celebahq256/runs/omta8esy}{did not show an increase in rewards} with the same computational budget and a learning rate of $7e-8$. On the other hand, increasing the learning rate too high (e.g., \href{https://wandb.ai/alcazar90/ddpo-aesthetic-ddpm-celebahq256/runs/3lb094dk}{$1e-5$}) resulted in degraded generated images. Therefore, we implemented a linear warm-up for the learning rate, followed by a half-cosine scheduler to control and adjust the learning rate during training. This started with a learning rate of 9e-8, linearly increasing to a peak of $3.74e-5$ within the first $25\%$ of the training steps. During the remaining $75\%$ of the training, the half-cycle cosine scheduler reduced the learning rate to $9e-9$. This training dynamic allowed the use of a higher learning rate without destroying the model's generative capabilities. Consequently, the modifications resulted in more substantial semantic variations in the images to maximize the aesthetic score without compromising generative capacity, as seen in the transition from a pretrained model sample to the final checkpoint in Figure~\ref{fig:ddpm-to-ddpo-aesthetic}. This was achieved in fewer epochs than those used in previous tasks (about half). \\
+\noindent A significant difference compared to parameter tuning in previous tasks is the requirement for a more complex training dynamic to achieve higher rewards. In previous tasks, a learning rate of $9e-8$ was used, but maximizing aesthetic quality \href{https://wandb.ai/alcazar90/ddpo-aesthetic-ddpm-celebahq256/runs/omta8esy}{did not show an increase in rewards} with the same computational budget and a learning rate of $7e-8$. On the other hand, increasing the learning rate too high (e.g., \href{https://wandb.ai/alcazar90/ddpo-aesthetic-ddpm-celebahq256/runs/3lb094dk}{$1e-5$}) resulted in degraded generated images. Therefore, we implemented a linear warm-up for the learning rate, followed by a half-cosine scheduler to control and adjust the learning rate during training. This started with a learning rate of 9e-8, linearly increasing to a peak of $3.74e-5$ within the first $25\%$ of the training steps. During the remaining $75\%$ of the training, the half-cycle cosine scheduler reduced the learning rate to $9e-9$ (see Figure~\ref{fig:laion-train-dynamic}). This training dynamic allowed the use of a higher learning rate without destroying the model's generative capabilities. Consequently, the modifications resulted in more substantial semantic variations in the images to maximize the aesthetic score without compromising generative capacity, as seen in the transition from a pretrained model sample to the final checkpoint in Figure~\ref{fig:ddpm-to-ddpo-aesthetic}. This was achieved in fewer epochs than those used in previous tasks (about half). \\
 
 % LAION learning dynamic
 \begin{figure}[ht]
   \centering
-  \begin{minipage}{0.2\textwidth}
+  \begin{minipage}{0.5\textwidth}
       \centering
       \includegraphics[width=1\textwidth]{img/results/laion-lr.png} 
   \end{minipage}\hfill
-  \begin{minipage}{0.6\textwidth}
+  \begin{minipage}{0.5\textwidth}
       \centering
       \includegraphics[width=1\textwidth]{img/results/laion-eval-mean-reward.png} 
-  \end{minipage}\hfill 
-  \begin{minipage}{0.2\textwidth}
-      \centering
-      \includegraphics[width=1\textwidth]{img/results/laion-kl.png} 
   \end{minipage}
+  % \hfill 
+  % \begin{minipage}{0.2\textwidth}
+  %     \centering
+  %     \includegraphics[width=1\textwidth]{img/results/laion-kl.png} 
+  % \end{minipage}
   \vspace{-8pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Aesthetic quality training dynamic.} \textbf{Left:} Learning rate scheduler. \textbf{Right:} Image size in kbs after JPEG compression, providing another form of reward signal for the same set of trajectories.}
+    \caption{\textbf{Aesthetic quality training dynamics.} \textbf{Left:} The learning rate scheduler with a linear warm-up reaching a peak learning rate of $3.64e-5$ at the first quarter of training, followed by a half-cosine decay for the remaining three-quarters. \textbf{Right:} Mean aesthetic score on the evaluation set during training. The yellow line corresponds to training with the learning rate schedule described on the left, while the other lines represent training with fixed lower learning rates of $7e-8$ and $9e-8$. Aesthetic quality requires a more complex training dynamic to achieve higher rewards.}
   \label{fig:laion-train-dynamic} % Add a proper reference for the label
 \end{figure}
 
 
-\noindent \textbf{Emergent effects in face generation using the LAION aesthetic predictor as a reward.} The effects observed in images generated by the DDPO-finetuned model to maximize the ``aesthetic quality'' of generated faces reflect much of the human preferences on which the LAION predictor was trained. The generated images tend to be predominantly female and appear younger. Figure~\ref{fig:aesthetic-effects} showcases these emergent effects, contrasting them with versions produced by the pretrained model. The second row displays two instances of the rejuvenation effect, with the image in the second column also undergoing a gender change. Warmer colors are also predominant, a phenomenon expected when compared to example images from the study introducing DDPO \cite{black2023training}. The hypothesis behind this warmth and sketched appearance effect is due to the preference for portraits or illustrations, which tend to be better evaluated and achieve higher aesthetic scores, thus inducing these attributes during the finetuning process. Another emergent effect is the intensity of the gaze, achieved not only through intensified eye makeup but also the "camera position" that captures the face, resembling a magazine cover image. Figure~\ref{fig:ddpm-to-ddpo-aesthetic} provides evidence of the transition from a sample of the pretrained model to the final checkpoint, where many of the described effects emerge, such as blondification, profiling, and rejuvenation.
+\noindent \textbf{Emergent effects in face generation using the LAION aesthetic predictor as a reward.} The effects observed in images generated by the DDPO-finetuned model to maximize the ``aesthetic quality'' of generated faces reflect much of the human preferences on which the LAION predictor was trained. The generated images tend to be predominantly female and appear younger. Figure~\ref{fig:aesthetic-effects} showcases these emergent effects, contrasting them with versions produced by the pretrained model. The second row displays two instances of the rejuvenation effect, with the image in the second column also undergoing a gender change. Warmer colors are also predominant, a phenomenon expected when compared to example images from the study introducing DDPO \cite{black2023training}. The hypothesis behind this warmth and sketched appearance effect is due to the preference for portraits or illustrations, which tend to be better evaluated and achieve higher aesthetic scores, thus inducing these attributes during the finetuning process. Another emergent effect is the intensity of the gaze, achieved not only through intensified eye makeup but also the ``camera position'' that captures the face, resembling a magazine cover image. Figure~\ref{fig:ddpm-to-ddpo-aesthetic} provides evidence of the transition from a sample of the pretrained model to the final checkpoint, where many of the described effects emerge, such as blondification, profiling, and rejuvenation. \\
 
 % Effects of LAION aesthetic quality
 \begin{figure}[ht]
@@ -436,7 +442,7 @@ as hair voluminzation \& definition, lightening of hair tones, increasing the co
   \includegraphics[scale=0.85]{img/results/aesthetic-effects.png}
   \vspace{-0pt}  % reduce space between caption and figure
     \captionsetup{width=\textwidth} % set the width of the caption
-    \caption{\textbf{Emergent effects in face generation using LAION aesthetic predictor as reward.}}
+    \caption{\textbf{Emergent effects in face generation using LAION aesthetic predictor as reward.} The DDPO finetuned model, optimized for aesthetic quality, generates faces that are predominantly female, appear younger, and feature warmer tones and intensified gaze, reflecting human preferences learned by the LAION predictor. }
     \label{fig:aesthetic-effects}
 \end{figure}
 
